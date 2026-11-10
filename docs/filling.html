@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11506 月報填報 · 農田水利署綠能管考</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+         margin: 0; padding: 0; background: #f8fafc; color: #0f172a; line-height: 1.5; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  
+  /* Header */
+  .header { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .header h1 { margin: 0 0 6px; font-size: 22px; }
+  .header .meta { color: #64748b; font-size: 13px; }
+  .badge { display: inline-block; background: #ddd6fe; color: #6d28d9;
+           padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-right: 8px; }
+  
+  /* Card */
+  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .card h2 { margin: 0 0 12px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+  .card .subtitle { color: #64748b; font-size: 13px; margin-bottom: 16px; }
+  
+  /* Form */
+  .form-row { display: grid; gap: 12px; margin-bottom: 12px; }
+  .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 700px) { .form-row.cols-2, .form-row.cols-3 { grid-template-columns: 1fr; } }
+  label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  label .req { color: #dc2626; margin-left: 2px; }
+  input[type="text"], input[type="tel"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
+    font-size: 13px; font-family: inherit; background: white;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid #7c3aed; outline-offset: -1px; border-color: #7c3aed; }
+  textarea { min-height: 50px; resize: vertical; line-height: 1.4; }
+  select { cursor: pointer; }
+  
+  /* Buttons */
+  button { cursor: pointer; padding: 7px 13px; border: 1px solid #cbd5e1; border-radius: 6px;
+           background: white; font-size: 13px; font-weight: 500; font-family: inherit;
+           transition: all 0.15s; }
+  button:hover:not(:disabled) { background: #f1f5f9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: #7c3aed; color: white; border-color: #6d28d9; font-weight: 600; }
+  .btn-primary:hover:not(:disabled) { background: #6d28d9 !important; }
+  .btn-success { background: #10b981; color: white; border-color: #059669; font-weight: 600; }
+  .btn-success:hover:not(:disabled) { background: #059669 !important; }
+  .btn-danger { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+  .btn-danger:hover:not(:disabled) { background: #fecaca !important; }
+  .btn-large { padding: 11px 22px; font-size: 15px; }
+  
+  /* Tabs - 兩層 */
+  .tabs-l1 { display: flex; gap: 4px; border-bottom: 2px solid #e2e8f0; margin-bottom: 12px; }
+  .tabs-l1 button { background: transparent; border: none; padding: 10px 20px; font-size: 15px;
+                    font-weight: 600; color: #64748b; border-radius: 0; border-bottom: 3px solid transparent;
+                    margin-bottom: -2px; }
+  .tabs-l1 button.active { color: #7c3aed; border-bottom-color: #7c3aed; }
+  .tabs-l1 button:hover:not(.active) { color: #0f172a; }
+  
+  .tabs-l2 { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; padding: 4px; 
+             background: #f1f5f9; border-radius: 8px; }
+  .tabs-l2 button { background: transparent; border: 1px solid transparent; padding: 6px 14px;
+                    font-size: 13px; font-weight: 500; color: #475569; border-radius: 6px; }
+  .tabs-l2 button.active { background: white; color: #0d9488; border-color: #ccfbf1; font-weight: 600;
+                           box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  
+  /* Site cards */
+  .sites-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .sites-toolbar input[type="text"] { flex: 1; min-width: 200px; }
+  .site-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 10px;
+               background: #fafbfc; }
+  .site-card.new { background: #ecfdf5; border-color: #6ee7b7; }
+  .site-card.deleted { background: #fee2e2; border-color: #fca5a5; opacity: 0.6; }
+  .site-card.deleted * { text-decoration: line-through; }
+  .site-card-header { display: flex; align-items: center; justify-content: space-between;
+                      gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed #e2e8f0; }
+  .site-card-title { font-weight: 600; font-size: 14px; flex: 1; }
+  .site-card .grid { display: grid; gap: 8px; }
+  .site-card .grid-1 { grid-template-columns: 1fr; }
+  .site-card .grid-2 { grid-template-columns: 1fr 1fr; }
+  .site-card .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .site-card .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  @media (max-width: 700px) { 
+    .site-card .grid-2, .site-card .grid-3, .site-card .grid-4 { grid-template-columns: 1fr; } 
+  }
+  .site-card .main-field { background: #fffbeb; padding: 8px; border-radius: 6px; border: 1px solid #fde68a; }
+  .site-card .main-field label { color: #92400e; font-weight: 700; }
+  
+  /* 審查欄位(textarea + 快速插入)*/
+  .review-field { position: relative; }
+  .review-field .quick-buttons { display: flex; gap: 3px; margin-top: 3px; }
+  .review-field .quick-buttons button { 
+    flex: 1; padding: 4px 8px; font-size: 13px; font-weight: 600;
+    background: white; border: 1px solid #e2e8f0; color: #475569; border-radius: 4px;
+  }
+  .review-field .quick-buttons button:hover { background: #f0fdfa; border-color: #5eead4; color: #0d9488; }
+  
+  /* Status badge */
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px;
+                  font-size: 11px; font-weight: 600; }
+  .status-new { background: #d1fae5; color: #047857; }
+  .status-deleted { background: #fee2e2; color: #991b1b; }
+  .status-modified { background: #fef3c7; color: #92400e; }
+  
+  /* Submit area */
+  .submit-area { background: white; border-radius: 12px; padding: 24px;
+                 box-shadow: 0 1px 3px rgba(0,0,0,0.06); text-align: center; }
+  .submit-area .confirm { display: flex; align-items: center; justify-content: center; gap: 8px;
+                          margin-bottom: 16px; font-size: 14px; }
+  .submit-area .confirm input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+  
+  /* Empty */
+  .empty { text-align: center; padding: 32px; color: #94a3b8; }
+  .footer { color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px; padding: 16px; }
+  
+  /* Sub-section */
+  .subsection-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;
+                      letter-spacing: 0.06em; margin: 12px 0 6px; padding-top: 8px; 
+                      border-top: 1px dashed #e2e8f0; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- ============ Header ============ -->
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+    <span style="font-size:28px">📋</span>
+    <div>
+      <h1>11506 月報填報</h1>
+      <div class="meta">
+        <span class="badge">民國 115 年 6 月</span>
+        農田水利署 · 水域型農業綠能 管制考核計畫
+      </div>
+    </div>
+  </div>
+  <div class="meta" style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0">
+    快照日期:2026-06-12　│　資料來源:雙週報管考_-1150609小水力盤點案場資料表及申設中案場進度表_彙整版V2.xlsx + 雙週報管考_-各管理處太陽光電進度_11505彙總v.xlsx + 雙週報管考_-農田水利署農業水域_圳路、農業水庫及埤塘_太陽光電盤點資料_1150527v.xlsx
+  </div>
+</div>
+
+<!-- ============ Step 1: 基本資料 ============ -->
+<div class="card" id="step1">
+  <h2>👤 第一步:基本資料</h2>
+  <p class="subtitle">請先選擇您的管理處,並填入填報人資訊</p>
+  
+  <div class="form-row">
+    <div>
+      <label>管理處<span class="req">*</span></label>
+      <select id="mgmt-select" onchange="onMgmtChange()">
+        <option value="">-- 請選擇 --</option>
+        <option value="桃園">桃園管理處</option>
+        <option value="石門">石門管理處</option>
+        <option value="新竹">新竹管理處</option>
+        <option value="苗栗">苗栗管理處</option>
+        <option value="臺中">臺中管理處</option>
+        <option value="南投">南投管理處</option>
+        <option value="彰化">彰化管理處</option>
+        <option value="雲林">雲林管理處</option>
+        <option value="嘉南">嘉南管理處</option>
+        <option value="高雄">高雄管理處</option>
+        <option value="屏東">屏東管理處</option>
+        <option value="宜蘭">宜蘭管理處</option>
+        <option value="花蓮">花蓮管理處</option>
+        <option value="臺東">臺東管理處</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="form-row cols-2">
+    <div>
+      <label>填報人姓名<span class="req">*</span></label>
+      <input type="text" id="filler-name" placeholder="例:王大明">
+    </div>
+    <div>
+      <label>聯絡電話</label>
+      <input type="tel" id="filler-phone" placeholder="例:0912-345-678">
+    </div>
+  </div>
+</div>
+
+<!-- ============ Step 2: 案場資料(選了管理處才出現)============ -->
+<div id="step2" style="display:none">
+  <div class="card">
+    <!-- 第一層 Tab -->
+    <div class="tabs-l1">
+      <button id="tab-solar" class="active" onclick="switchCategory('solar')">
+        ☀️ 太陽光電 <span id="tab-solar-count" style="color:#94a3b8;font-weight:400;font-size:12px;margin-left:4px"></span>
+      </button>
+      <button id="tab-hydro" onclick="switchCategory('hydro')">
+        💧 小水力 <span id="tab-hydro-count" style="color:#94a3b8;font-weight:400;font-size:12px;margin-left:4px"></span>
+      </button>
+    </div>
+    
+    <!-- 太陽光電 content -->
+    <div id="content-solar">
+      <div class="sites-toolbar">
+        <input type="text" id="solar-search" placeholder="🔍 搜尋案場名稱或廠商..." oninput="renderSites('solar_addendum')">
+        <button onclick="addSite('solar_addendum')">+ 新增太陽光電案場</button>
+      </div>
+      <div id="list-solar_addendum"></div>
+    </div>
+    
+    <!-- 小水力 content(內含 4 個子分頁)-->
+    <div id="content-hydro" style="display:none">
+      <!-- 第二層 Tab -->
+      <div class="tabs-l2">
+        <button id="subtab-tender" class="active" onclick="switchHydroSubtab('hydro_tender')">
+          🏷️ 招標案 <span id="subtab-tender-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+        <button id="subtab-test" onclick="switchHydroSubtab('hydro_test')">
+          🧪 測試案 <span id="subtab-test-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+        <button id="subtab-potential" onclick="switchHydroSubtab('hydro_potential')">
+          ✨ 潛力案場 <span id="subtab-potential-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+        <button id="subtab-inquiry" onclick="switchHydroSubtab('hydro_inquiry')">
+          📞 洽詢紀錄 <span id="subtab-inquiry-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+      </div>
+      
+      <div id="sub-tender">
+        <div class="sites-toolbar">
+          <input type="text" id="tender-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_tender')">
+          <button onclick="addSite('hydro_tender')">+ 新增招標案</button>
+        </div>
+        <div id="list-hydro_tender"></div>
+      </div>
+      
+      <div id="sub-test" style="display:none">
+        <div class="sites-toolbar">
+          <input type="text" id="test-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_test')">
+          <button onclick="addSite('hydro_test')">+ 新增測試案</button>
+        </div>
+        <div id="list-hydro_test"></div>
+      </div>
+      
+      <div id="sub-potential" style="display:none">
+        <div class="sites-toolbar">
+          <input type="text" id="potential-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_potential')">
+          <button onclick="addSite('hydro_potential')">+ 新增潛力案場</button>
+        </div>
+        <div id="list-hydro_potential"></div>
+      </div>
+      
+      <div id="sub-inquiry" style="display:none">
+        <div class="sites-toolbar">
+          <input type="text" id="inquiry-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_inquiry')">
+          <button onclick="addSite('hydro_inquiry')">+ 新增洽詢紀錄</button>
+        </div>
+        <div id="list-hydro_inquiry"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Step 3: 提交 ============ -->
+<div id="step3" class="submit-area" style="display:none">
+  <h2 style="margin:0 0 12px">📤 第三步:提交填報</h2>
+  <p style="color:#475569;margin:0 0 16px">確認所有資料無誤後,點下方按鈕下載填報 Excel,上傳至指定雲端資料夾。</p>
+  
+  <div class="confirm">
+    <input type="checkbox" id="confirm-check" onchange="onConfirmChange()">
+    <label for="confirm-check" style="margin:0;cursor:pointer">我已檢查所有案場資料無誤,可以下載填報檔</label>
+  </div>
+  
+  <button id="submit-btn" class="btn-success btn-large" onclick="downloadExcel()" disabled>
+    📥 下載填報 Excel
+  </button>
+  
+  <p style="margin-top:16px;font-size:13px;color:#64748b">
+    下載後請依現有作業流程,上傳至指定雲端資料夾
+  </p>
+</div>
+
+<div class="footer">
+  農田水利署 · 水域型農業綠能設置綠能設施管制考核計畫<br>
+  期別:11506　│　產生時間:2026-06-12T13:04:51.016Z
+</div>
+
+</div>
+
+<!-- 快照資料 -->
+<script type="application/json" id="snapshot-data">{"imported_at":"2026-06-12T13:04:24.081Z","source_files":[{"name":"雙週報管考_-1150609小水力盤點案場資料表及申設中案場進度表_彙整版V2.xlsx","sheets_found":["hydro_tender","hydro_test","hydro_potential","hydro_inquiry"]},{"name":"雙週報管考_-各管理處太陽光電進度_11505彙總v.xlsx","sheets_found":["solar_addendum"]},{"name":"雙週報管考_-農田水利署農業水域_圳路、農業水庫及埤塘_太陽光電盤點資料_1150527v.xlsx","sheets_found":["solar_addendum"]}],"solar_addendum":[{"_idx":3,"_kind":"solar_addendum","order":"03","no":"1","mgmt":"桃園","contract_name":"桃園大圳幹線太陽光電發電系統計畫","site_progress":"待施工","vendor":"耀盈能源科技股份有限公司","site_name":"桃園大圳(18k-25k)","site_count":1,"capacity_mw":1.75,"current_stage":"施工階段","sign_date":"110/10/01","install_deadline":"114/9/20及114/10/16\r\n(已於113/9/20及10/17與台電完成簽約，設置期限為電業簽約後1年)\r\n113/09/20:楊梅區田心段34、上田段474、蘆竹區後壁段1054、1089、798、800、998、觀音區中觀段1地號。\r\n113/10/16:新屋區富九段145地號。","expire_status":"未到期","current_operation":"113年9月9日(113)耀字第0909002號函，說明原日煬綠能科技股份有限公司經企業合併，相關權利義務由新設公司概括承受.\r\n廠商因暫時缺工尚未進場施工，目前持續確認廠商後續開工時程.(本處已於114年9月22日農水桃園字第1148245532號函說明將自9/21起計算逾期違約金)\r\n114/12/24進度：\r\n經計算本案逾期違約金已達契約規定使用費之20%，擬請律師辦理後續相關解約事宜。\r\n廠商已取得桃園市政府同意備案展延2次，本處業於115/3/24農水桃園字第1158211034號函同意展延期限。\r\n廠商於115/1/21、2/24及4/23提送施工計畫書(含修正版)，將俟各委員均無意見，方可請廠商安排召開地方說明會及進場施作事宜(本處4/13農水桃園字第1158243474號函)。\r\n115/5/29廠商尚未回覆辦理地方說明會之消息。","difficulty":"-","team_suggestion":"","note":""},{"_idx":4,"_kind":"solar_addendum","order":"03","no":"2","mgmt":"桃園","contract_name":"桃園大圳幹線太陽光電發電系統計畫","site_progress":"待施工","vendor":"耀盈能源科技股份有限公司","site_name":"坑子口圳","site_count":1,"capacity_mw":0.29,"current_stage":"施工階段","sign_date":"110/10/01","install_deadline":"","expire_status":"未到期","current_operation":"113年9月9日(113)耀字第0909002號函，說明原日煬綠能科技股份有限公司經企業合併，相關權利義務由新設公司概括承受.\r\n廠商因暫時缺工尚未進場施工，目前持續確認廠商後續開工時程.(本處已於114年9月22日農水桃園字第1148245532號函說明將自9/21起計算逾期違約金)\r\n114/12/24進度：\r\n經計算本案逾期違約金已達契約規定使用費之20%，擬請律師辦理後續相關解約事宜。\r\n廠商已取得桃園市政府同意備案展延2次，本處業於115/3/24農水桃園字第1158211034號函同意展延期限。\r\n廠商於115/1/21、2/24及4/23提送施工計畫書(含修正版)，將俟各委員均無意見，方可請廠商安排召開地方說明會及進場施作事宜(本處4/13農水桃園字第1158243474號函)。\r\n115/5/29廠商尚未回覆辦理地方說明會之消息。","difficulty":"","team_suggestion":"","note":""},{"_idx":5,"_kind":"solar_addendum","order":"04","no":"3","mgmt":"石門","contract_name":"過嶺支渠太陽光電發電系統計畫","site_progress":"申設中","vendor":"晶成科技股份有限公司","site_name":"過嶺支渠","site_count":1,"capacity_mw":0.55,"current_stage":"尚未送件","sign_date":"110/08/24","install_deadline":"114/11/20","expire_status":"已到期","current_operation":"1.114年2月12日召開綠能小組會議審查計畫書，結論請修正後再送本處\r\n2.完成計畫書修正，114年5月6日晶能源字第114050604號來文申請修正使用土地同意書用印，完成用印後送計畫書審查.\r\n3.114年5月22日晶能源字第11405220001號提送修正計劃書，各業務單位審查中.\r\n4.114/6/30進行綠能第二次審查會議，審查計畫書.結論再請廠商修正後再送本處審查.平鎮區高雙段因無法取得地方共識，廠商決定取消.\r\n5.114/8/21廠商到本處進行設計書圖的草稿審閱及討論.\r\n6.關於桃園市府對於後續公有土地推動意見，廠商114年8月29日晶能源字第114082952102號去文市府，函詢市府相關意見，以利後續推動工作之評估.\r\n7.桃園市政府114年9月8日府經公字第1140253814號函請廠商補充相關資料.\r\n8.115/12/23進度：晶成能源股份有限公司114年12月12日晶能源子第114121252101號函提送容許申請計劃書送本處辦理審查中。\r\n115/05/21進度：本週無新進度","difficulty":"-","team_suggestion":"","note":""},{"_idx":6,"_kind":"solar_addendum","order":"04","no":"4","mgmt":"石門","contract_name":"石門大圳(草湳坡段、二重溪段、東流段)太陽光電發電系統計畫","site_progress":"已併網-二重溪段、東流段\r\n停工中-草湳坡段","vendor":"耀盈能源科技股份有限公司","site_name":"石門大圳-草湳坡段","site_count":1,"capacity_mw":0.4941,"current_stage":"施工階段","sign_date":"110/08/24","install_deadline":"(原113/07/19)\r\n取得同意備案後，\r\n備案後未規定設置期限。","expire_status":"未到期","current_operation":"112/09/18召開本處綠能小組會議審查通過\r\n本案移樹計畫案經署核判暫緩辦理，112/10/25通知廠商本工區暫緩辦理，謹慎研議(農水石門字第1126283508號函)\r\n楊梅區公所函轉里辦公處申請石門大圳草湳坡段儘速進場建置以改善環境一案，本處業以113年12月5日農水石門字第1138275967號函復在案\r\n113年12月30日召開石門大圳(草湳坡段草湳坡小段)太陽光電建置(第二次)地方說明會\r\n114年2月12日召開本處綠能推動小組會議研商草湳坡段太陽光電案，結論為因反對連署，後續是否繼續辦理，請光電廠商審慎研議\r\n耀盈能源科技股份有限公司114年2月25日(114)耀字第0225001號函將繼續溝通協調.\r\n115/12/23：草湳坡段無新推動進度(二重溪段、東流段正常營運中)\r\n115/05/21進度：本週無新進度","difficulty":"-","team_suggestion":"","note":""},{"_idx":7,"_kind":"solar_addendum","order":"04","no":"5","mgmt":"石門","contract_name":"石門大圳上段用地太陽光電發電系統計畫","site_progress":"已併網","vendor":"耀盈能源科技股份有限公司","site_name":"石門大圳上段","site_count":1,"capacity_mw":2.63034,"current_stage":"已併網","sign_date":"111/04/07","install_deadline":"尚未取得電業簽約。設置期限為電業簽約後1年","expire_status":"未到期","current_operation":"台電公司協調細節作業中，免雜申請已取得，發包中，待施工，進場前準備中\r\n(用地各項電桿設施申請遷移中)\r\n114年3月4日辦理用地電桿、路燈遷移會勘\r\n114年3月25日辦理第二次地方說明會.\r\n114年4月1日將辦理用地電桿、路燈遷移第三次會勘.\r\n114/11/28進度：\r\n完成佈板作業申請台電併網，併網作業完， 設備登記作業中。\r\n115/5/29進度：廠商仍在補齊設備變更文件中。尚未取得設備登記。","difficulty":"-","team_suggestion":"","note":""},{"_idx":8,"_kind":"solar_addendum","order":"05","no":"5","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"坪林人工蓄水池","site_count":null,"capacity_mw":0.49987,"current_stage":"併聯審查(未送)","sign_date":"111/8/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\r\n115/02/03進度：廠商提出解除契約。\r\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。","difficulty":"","team_suggestion":"","note":""},{"_idx":9,"_kind":"solar_addendum","order":"05","no":"6","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"港南大排1","site_count":1,"capacity_mw":0.49987,"current_stage":"土地容許","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已送件至新竹市政府，市府有回傳土地容許審查意見，目前已依意見修正後重新送出。\r\n115/02/03進度：依新竹市政府「設置地面型太陽光電設施景觀及生態環境審定原則」，廠商無法符合法規要求，提出解除契約。\r\n115/05/21進度：管理處已送件至新竹市政府，市府有回傳土地容許審查意見，目前已依意見修正後重新送出。解除契約中。","difficulty":"-","team_suggestion":"","note":""},{"_idx":10,"_kind":"solar_addendum","order":"05","no":"7","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"港南大排2","site_count":1,"capacity_mw":0.49987,"current_stage":"土地容許","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已送件至新竹市政府，市府有回傳土地容許審查意見，目前已依意見修正後重新送出。\r\n115/02/03進度：依新竹市政府「設置地面型太陽光電設施景觀及生態環境審定原則」，廠商無法符合法規要求，提出解除契約。\r\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。","difficulty":"","team_suggestion":"","note":""},{"_idx":11,"_kind":"solar_addendum","order":"05","no":"8","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"竹東圳幹線","site_count":1,"capacity_mw":0.0999,"current_stage":"土地容許","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\r\n115/02/03進度：廠商提出解除契約。\r\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。","difficulty":"","team_suggestion":"","note":""},{"_idx":12,"_kind":"solar_addendum","order":"05","no":"9","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"貓兒錠幹線","site_count":1,"capacity_mw":0.38554,"current_stage":"土地容許","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\r\n115/02/03進度：廠商提出解除契約。\r\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。","difficulty":"","team_suggestion":"","note":""},{"_idx":13,"_kind":"solar_addendum","order":"05","no":"10","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"貓兒錠大排1","site_count":1,"capacity_mw":0.35372000000000003,"current_stage":"土地容許","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\r\n115/02/03進度：廠商提出解除契約。\r\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。","difficulty":"","team_suggestion":"","note":""},{"_idx":14,"_kind":"solar_addendum","order":"05","no":"11","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"貓兒錠幹線8支線","site_count":1,"capacity_mw":0.45806,"current_stage":"土地容許","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\r\n115/02/03進度：廠商提出解除契約。\r\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。","difficulty":"","team_suggestion":"","note":""},{"_idx":15,"_kind":"solar_addendum","order":"05","no":"12","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"貓兒錠大排2","site_count":1,"capacity_mw":0.49987,"current_stage":"土地容許","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\r\n115/02/03進度：廠商提出解除契約。\r\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。","difficulty":"","team_suggestion":"","note":""},{"_idx":16,"_kind":"solar_addendum","order":"05","no":"13","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"翁厝南幹線","site_count":1,"capacity_mw":0.37222000000000005,"current_stage":"土地容許","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\r\n115/02/03進度：廠商提出解除契約。\r\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。","difficulty":"","team_suggestion":"","note":""},{"_idx":17,"_kind":"solar_addendum","order":"05","no":"14","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"澎湖窟圳","site_count":1,"capacity_mw":0.49987,"current_stage":"土地容許","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\r\n115/02/03進度：廠商提出解除契約。\r\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。","difficulty":"","team_suggestion":"","note":""},{"_idx":18,"_kind":"solar_addendum","order":"05","no":"15","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"澎湖窟圳3支線","site_count":1,"capacity_mw":0.0999,"current_stage":"土地容許","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\r\n同意備案後250天,\r\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\r\n115/02/03進度：廠商提出解除契約。\r\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。","difficulty":"","team_suggestion":"","note":""},{"_idx":19,"_kind":"solar_addendum","order":"07","no":"16","mgmt":"台中","contract_name":"大肚圳太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"大肚圳-(溪州段C區)","site_count":1,"capacity_mw":0.2703,"current_stage":"土地容許","sign_date":"109/02/04","install_deadline":"114/12/31","expire_status":"已到期","current_operation":"113/12/12之協商會議，雙方協商同意展延至114/12/31，屆時若仍未取得土地容許使用許可，則終止契約\r\n114/12/22進度：土地容許尚在申請中，本週無新進度。\r\n115/02/04進度:大肚圳C區及擴充案場於114.12.31終止契約，現正辦理退還履約保證金作業。","difficulty":"-","team_suggestion":"","note":""},{"_idx":20,"_kind":"solar_addendum","order":"09","no":"17","mgmt":"彰化","contract_name":"八堡一圳幹線太陽能發電系統計畫","site_progress":"規劃推動","vendor":"中租迪和股份有限公司","site_name":"八堡一圳","site_count":1,"capacity_mw":2.01411,"current_stage":"已解約","sign_date":"109/9/25","install_deadline":"原期限：113/12/5\r\n目前期限：復工後133日曆天","expire_status":"未到期","current_operation":"1.地方民意反對聲大，暫時無法推動.\r\n管理處114/2/4函文予廠商，俟八堡一圳案場欄杆修復完畢後，辦理解約程序.\r\n2.廠商已進場施作欄杆修復.\r\n3.因於112/5/26同意廠商暫緩施工，剩餘工期133日曆天，待取得共識後再行申請復工，故設置期限尚未到期.\r\n114/4/30廠商已完成水泥護欄修護部分.\r\n114/8/20造型欄杆修謢作業完成.\r\n預定9/20辦理會勘，確認造型欄杆是否修護完成.\r\n114/9/24廠商來函謢欄及欄杆修謢完成會勘紀錄，管理處簽核中(彰水1140924號).\r\n114/10/16辦理解約流程中(農水彰化字第1148548691號)。","difficulty":"","team_suggestion":"","note":""},{"_idx":21,"_kind":"solar_addendum","order":"09","no":"18","mgmt":"彰化","contract_name":"西溝支線太陽能發電系統計畫","site_progress":"規劃推動","vendor":"中租迪和股份有限公司","site_name":"西溝","site_count":1,"capacity_mw":0.44847,"current_stage":"已解約","sign_date":"109/9/25","install_deadline":"原期限：113/12/5\r\n目前期限：復工後133日曆天","expire_status":"未到期","current_operation":"地方民意反對聲大，暫時無法推動\r\n管理處114/2/4函文予廠商，俟八堡一圳案場欄杆修復完畢後，辦理解約程序\r\n因於112/5/26同意廠商暫緩施工，剩餘工期133日曆天，待取得共識後再行申請復工，故設置期限尚未到期.\r\n114/10/16辦理解約流程中(農水彰化字第1148548691號)。","difficulty":"","team_suggestion":"","note":""},{"_idx":22,"_kind":"solar_addendum","order":"10","no":"17","mgmt":"雲林","contract_name":"北港支線水井分線太陽光電發電系統計畫","site_progress":"申設中","vendor":"耀盈能源科技股份有限公司","site_name":"北港支線水系-北港支線一區","site_count":1,"capacity_mw":22.61655,"current_stage":"土地容許","sign_date":"110/12/29\r\n111/05/13\r\n(加地)","install_deadline":"114/4/21","expire_status":"已到期","current_operation":"113/10/24縣府同意廠商增設升壓站函文(因地段號需再請廠商修正)\r\n114/5/22進度：已取得電業籌設許可(經授能字第11400101110號)，尚有土地容許及施工許可、同意備案等未取得，展延程序辦理中。\r\n114/11/27進度：目前土地容許及施工許可、同意備案等未取得。\r\n114/12/10進度：目前土地容許及施工許可、同意備案等未取得。\r\n114/12/22進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/14進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/22進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/28進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/02/03進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/03/18進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/05/25進度：目前土地容許及施工許可、同意備案等未取得。","difficulty":"","team_suggestion":"","note":""},{"_idx":23,"_kind":"solar_addendum","order":"10","no":"18","mgmt":"雲林","contract_name":"北港支線水井分線太陽光電發電系統計畫","site_progress":"申設中","vendor":"耀盈能源科技股份有限公司","site_name":"北港支線水系-北港支線二區","site_count":1,"capacity_mw":3.64375,"current_stage":"土地容許","sign_date":"110/12/29","install_deadline":"114/4/21","expire_status":"已到期","current_operation":"113/10/24縣府同意廠商增設升壓站函文(因地段號需再請廠商修正)\r\n114/5/22進度：已取得電業籌設許可(經授能字第11400101110號)，尚有土地容許及施工許可、同意備案等未取得，展延程序辦理中。\r\n114/11/27進度：目前土地容許及施工許可、同意備案等未取得。\r\n114/12/10進度：目前土地容許及施工許可、同意備案等未取得。\r\n114/12/22進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/14進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/22進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/28進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/02/03進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/03/18進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/05/25進度：目前土地容許及施工許可、同意備案等未取得。","difficulty":"","team_suggestion":"","note":""},{"_idx":24,"_kind":"solar_addendum","order":"10","no":"19","mgmt":"雲林","contract_name":"北港支線水井分線太陽光電發電系統計畫","site_progress":"申設中","vendor":"耀盈能源科技股份有限公司","site_name":"北港支線水系-水井分線一區","site_count":1,"capacity_mw":1.8876,"current_stage":"土地容許","sign_date":"110/12/29","install_deadline":"114/4/21","expire_status":"已到期","current_operation":"113/10/24縣府同意廠商增設升壓站函文(因地段號需再請廠商修正)\r\n114/5/22進度：已取得電業籌設許可(經授能字第11400101110號)，尚有土地容許及施工許可、同意備案等未取得，展延程序辦理中。\r\n114/11/27進度：目前土地容許及施工許可、同意備案等未取得。\r\n114/12/10進度：目前土地容許及施工許可、同意備案等未取得。\r\n114/12/22進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/14進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/22進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/28進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/02/03進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/03/18進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/05/25進度：目前土地容許及施工許可、同意備案等未取得。","difficulty":"","team_suggestion":"","note":""},{"_idx":25,"_kind":"solar_addendum","order":"10","no":"20","mgmt":"雲林","contract_name":"北港支線水井分線太陽光電發電系統計畫","site_progress":"申設中","vendor":"耀盈能源科技股份有限公司","site_name":"北港支線水系-後溝子分線","site_count":1,"capacity_mw":3.4276,"current_stage":"土地容許","sign_date":"110/12/29","install_deadline":"114/4/21","expire_status":"已到期","current_operation":"113/10/24縣府同意廠商增設升壓站函文(因地段號需再請廠商修正)\r\n114/5/22進度：已取得電業籌設許可(經授能字第11400101110號)，尚有土地容許及施工許可、同意備案等未取得，展延程序辦理中。\r\n114/11/27進度：目前土地容許及施工許可、同意備案等未取得。\r\n114/12/10進度：目前土地容許及施工許可、同意備案等未取得。\r\n114/12/22進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/14進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/22進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/01/28進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/02/03進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/03/18進度：目前土地容許及施工許可、同意備案等未取得。\r\n115/05/25進度：目前土地容許及施工許可、同意備案等未取得。","difficulty":"","team_suggestion":"","note":""},{"_idx":26,"_kind":"solar_addendum","order":"10","no":"21","mgmt":"雲林","contract_name":"斗六大圳及濁幹線第三號進水口導水路太陽光電發電系統計畫案","site_progress":"申設中","vendor":"嘉昱能源有限公司","site_name":"斗六大圳","site_count":1,"capacity_mw":12,"current_stage":"土地容許","sign_date":"111/08/17","install_deadline":"原期限114/2/5\r\n(暫不計算履約期限)","expire_status":"已到期","current_operation":"114/02/13管理處向雲林縣政府確認仍在審核中，本處同意廠商俟取得非都市土地使用許可後，再依契約規定函送至本處辦理後續同意備案申請期間與施工工程期間之展延期限。\r\n114/5/27進度：土容申請審查中，待審查後申請展延(已有8個區段取得容許，尚有5區段仍在審查中)。\r\n114/6/11申請同意備案送件至今尚未取得，係因114/03/31日新頒訂「設置地面型太陽光電設施景觀及生態環境審定原則」，縣府函詢能源署本案適用範圍。\r\n114/10/21進度：取得土地容許2案。(剩5案未取得)\r\n114/11/5會議決議，其餘5案，2案林內鄉公所反對不做、3案古坑棋盤村民有諸多意見不做(農水雲林字第1148619556號)。\r\n114/11/27進度：縣府函詢署本部圳路容許使用範圍(114/11/21府建二字第1143949937號)。\r\n114/12/10進度：114/12/5古坑鄉棋盤村案場原結論為不予施作；惟為避免地方疑義，該公司決議全案防汛道路上方區域不再施作(容量約1.8MW)。為提升整體效益，該公司擬再與棋盤村村民溝通，研議是否依陳情意見調整為僅於棋盤村轄內圳路上方施作。\r\n114/12/22進度：縣府函詢署本部圳路容許使用範圍(114/11/21府建二字第1143949937號)。\r\n115/01/06進度：114/12/26取得同意備案(114/12/26府建行二字第1143954598、1143954606、1143954644、1143954759、1143954659、1143954661、1143954757、1143954712、1143954754、1143954591號)。\r\n115/01/14進度：同上。\r\n115/01/22進度：同上。\r\n115/01/28進度：同上。\r\n115/02/03進度：同上。\r\n115/03/18進度：同上。\r\n115/04/22進度：115/2/26農水雲林字第1158594489號同意本案併聯試運轉日期展延至115/11/10。施工前說明會辦理日期：115/3/3湖山里、梅林里。115/3/5東和村、新庄村。115/4/8烏塗村。廠商目前進度備料中。\r\n115/05/25進度：115/2/26農水雲林字第1158594489號同意本案併聯試運轉日期展延至115/11/10。廠商目前進度備料中。","difficulty":"","team_suggestion":"","note":""},{"_idx":27,"_kind":"solar_addendum","order":"10","no":"22","mgmt":"雲林","contract_name":"濁幹線(三合里區段)太陽光電發電系統計畫案","site_progress":"申設中","vendor":"中租電力科技股份有限公司","site_name":"濁幹線(三合里)","site_count":1,"capacity_mw":10,"current_stage":"土地容許","sign_date":"112/04/17","install_deadline":"原期限114/2/5\r\n(暫不計算履約期限)","expire_status":"已到期","current_operation":"114/02/13廠商因未能依契約第五條之(二)於490日內取得土地容許，故廠商處於罰款累計狀態\r\n管理處決定，本處同意廠商待行政程序完成後再辦理設置期限展延，案場計畫書修正當中\r\n114/6進度：案場計畫書修正版送至本處審查，核定後將送縣府跑土地容許相關程序(農水雲林字第1148580762號)。\r\n114/11/27：在縣府進行土地容許案件申請。\r\n114/12/10：在縣府進行土地容許案件申請。\r\n114/12/22：在縣府進行土地容許案件申請。\r\n115/01/14：在縣府進行土地容許案件申請。\r\n115/01/22：在縣府進行土地容許案件申請。\r\n115/01/28：在縣府進行土地容許案件申請。\r\n115/02/03：在縣府進行土地容許案件申請。\r\n115/03/18：在縣府進行土地容許案件申請。\r\n115/05/25進度：雲林縣政府土地容許使用申請通過(5案)。(雲林縣政府115年5月13日府建行一字第1153916115號、雲林縣政府115年5月13日府建行一字第1153916118號、雲林縣政府115年5月13日府建行一字第1153916121號、雲林縣政府115年5月13日府建行一字第1153916122號、雲林縣政府115年5月14日府建行一字第1153916110號)","difficulty":"","team_suggestion":"","note":"1.案場計畫書要給管理處核定，但因為尚未寫完，所以沒有核定版案場計畫書。\r\n2.管理處需要核定版案場計畫書，才會核發使用地主管機關同意函。\r\n3.縣市政府需要使用地主管機關同意函及核定版計畫書，才會核發土地容許。"},{"_idx":28,"_kind":"solar_addendum","order":"11","no":"23","mgmt":"嘉南","contract_name":"八掌溪支線等3線圳路(地面型)太陽光電發電系統計畫","site_progress":"申設中","vendor":"崑鼎綠能環保(股)公司","site_name":"八掌溪支線等3線圳路","site_count":1,"capacity_mw":5.16258,"current_stage":"併聯審查","sign_date":"111/12/16","install_deadline":"115/5/15","expire_status":"未到期","current_operation":"1.因台電加強電網改善工程延宕，經本處114.5.21農水嘉南字第1148656361號函原則同意第2次展延設置期限至115年5月15日止.\r\n2.依嘉義縣政府111年9月29日修訂之「嘉義縣政府太陽光電設置推動指引」第3點第4款規定，設置規劃階段應本於敦親睦鄰原則加強在地利害關係人溝通，請廠商儘速與地方溝通，以取得地方共識，避免影響併聯供電時程.\r\n115/03/16進度：已於115/02/09終止租約。","difficulty":"-","team_suggestion":"","note":""},{"_idx":29,"_kind":"solar_addendum","order":"11","no":"24","mgmt":"嘉南","contract_name":"烏山頭水庫水面型第二期太陽光電發電系統計畫","site_progress":"申設中","vendor":"星曄綠能股份有限公司","site_name":"烏山頭水庫(二期)","site_count":1,"capacity_mw":13.294,"current_stage":"電業籌設","sign_date":"112/03/22","install_deadline":"114/9/11","expire_status":"未到期","current_operation":"1.112.6.30台南市議員提案建請市府不應同意轄內民生用水的水庫設置太陽光電發電系統，保證民眾用水安全\r\n2.依臺南市府經濟發展局113.9.30函，於民生用水水庫建置太陽光電，地方有意見，請貴公司本於敦親睦鄰原則，妥善加強地方溝通協調，並檢附溝通文件後再行續辦\r\n3.承租廠商於114年1月10日來訪表示，已拜會議員及里長，後續將朝取得議員及地方共識，如欲繼續執行，才會召開地方說明會\r\n114/11/13進度：尚未取得地方共識，廠商來文申請展延(農水嘉南字第1148641933號)，基於契約管理需要，原則同意展延，惟確切展延日數仍須依契約條款及相關證據審認後，另依契約規定以書面通知,本週無進度。\r\n115/03/16進度：已於115/03/04終止租約。","difficulty":"-","team_suggestion":"","note":""},{"_idx":30,"_kind":"solar_addendum","order":"13","no":"25","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"東圳第一中排","site_count":1,"capacity_mw":3.5169,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114/12/22進度：\r\n土地容許資料本處已核定通過，目前送至縣府審查中。\r\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":31,"_kind":"solar_addendum","order":"13","no":"26","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"廣安圳導水路(下游)","site_count":1,"capacity_mw":2.303157,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114/12/22進度：\r\n土地容許資料本處已核定通過，目前送至縣府審查中。\r\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":32,"_kind":"solar_addendum","order":"13","no":"27","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"石頭埤排水","site_count":1,"capacity_mw":0.4827,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114/12/22進度：\r\n土地容許資料本處已核定通過，目前送至縣府審查中。\r\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":33,"_kind":"solar_addendum","order":"13","no":"28","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"濫圳幹線","site_count":1,"capacity_mw":1.105,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114/12/22進度：\r\n土地容許資料本處已核定通過，目前送至縣府審查中。\r\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":34,"_kind":"solar_addendum","order":"13","no":"29","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"濫圳中排2","site_count":1,"capacity_mw":0.3405,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114/12/22進度：\r\n土地容許資料本處已核定通過，目前送至縣府審查中。\r\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":35,"_kind":"solar_addendum","order":"13","no":"30","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"萬丹圳四支線、萬丹圳四支線小給二之一","site_count":1,"capacity_mw":0.5388,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114/12/22進度：\r\n土地容許資料本處已核定通過，目前送至縣府審查中。\r\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":36,"_kind":"solar_addendum","order":"13","no":"31","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"萬丹圳幹線(一期)","site_count":1,"capacity_mw":0.464,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114/12/22進度：\r\n土地容許資料本處已核定通過，目前送至縣府審查中。\r\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":37,"_kind":"solar_addendum","order":"13","no":"32","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"萬丹圳幹線(二期)","site_count":1,"capacity_mw":1.0692,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114/12/22進度：\r\n土地容許資料本處已核定通過，目前送至縣府審查中。\r\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":38,"_kind":"solar_addendum","order":"13","no":"33","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"萬丹圳幹線(三期)","site_count":1,"capacity_mw":0.533,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114年7月31日屏東縣致府回文(屏府城工字第1140205933號)與農水署確認施作疑義.\r\n114年9月17日農水署發文(農水企字第1148015079號)請屏東處研析近1年多以來本案場實際辦理情形及地方反映意見.\r\n114年10月03日屏東處與廠商協商重新確認地方意見，簽署同意書事宜.\r\n114年10月20日廠商已辦理說明會並取得簽署書.\r\n114/12/22進度：廠商是否簽署清冊彙整中。\r\n115/05/21進度：本週無新進度","difficulty":"已先針對案件內未取得鄰近地主同意之申請地號取消，先以已取得鄰近地主同意之土地再送至屏東縣政府進行審核。","team_suggestion":"","note":""},{"_idx":39,"_kind":"solar_addendum","order":"13","no":"34","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"萬丹圳第六支線中排二(四期)","site_count":1,"capacity_mw":0.4488,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114/12/22進度：\r\n土地容許資料本處已核定通過，目前送至縣府審查中。\r\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":40,"_kind":"solar_addendum","order":"13","no":"35","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"萬丹圳第九支線中排四、萬丹圳第六支線小排四之九、萬丹圳第六支線","site_count":1,"capacity_mw":1.1333,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\r\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\r\n114/12/22進度：\r\n土地容許資料本處已核定通過，目前送至縣府審查中。\r\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":41,"_kind":"solar_addendum","order":"15","no":"37","mgmt":"花蓮","contract_name":"溪口排水圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"頂晶科技股份有限公司","site_name":"溪口排水(第一型).(第三型)","site_count":1,"capacity_mw":3.9997,"current_stage":"併聯審查","sign_date":"110/10/06","install_deadline":"116/3/11","expire_status":"未到期","current_operation":"管理處圳路改善工程尚未完成驗收，廠商須於復工後，1個月內取得所有申設資料，若未取得則與廠商解約.\r\n本處工務組訂於114年5月23日進行圳路改善工程驗收.\r\n114/6/12 圳路強化工程已完成驗收，待決算驗收證明副知本組後，即通知廠商復工並依契約相關規定辦理.\r\n114/6/19 函請廠商於收到書面通知後立即復工\r\n114/07/23 廠商申請展延第一階段使用期限,並提供參考依據(114年7月15日(114)和字第1140700167號函) .\r\n經諮詢律師和字第1140700167號函後，召開綠能推動專責小組第12次會議討論溪口排水廠商申請展延第一階段使用期限案，結論待與廠商協議是否合意展延.(因與會人數不足，無決議)\r\n114年11月5日再召開會議討論是否准予展延.\r\n經本專責小組討論後原則同意展延一年並具切結書若無法於期限內取得相關證執照願依契約第三條第一項第一款規定終止契約 。(第14次會議紀錄)\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年3月31日農水花蓮字第1158897471號函同意展延第一階段使用期間由115年3月12日起至116年3月11日止。","difficulty":"-","team_suggestion":"","note":""},{"_idx":42,"_kind":"solar_addendum","order":"15","no":"38","mgmt":"花蓮","contract_name":"太平渠圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"太平渠幹線(高寮段)","site_count":1,"capacity_mw":1.20850167135608,"current_stage":"併聯審查","sign_date":"112/03/16","install_deadline":"116/5/31","expire_status":"未到期","current_operation":"114/2/24通知廠商第一階段二年期限即將屆，請廠商評估是否繼續執行契約，如需繼續請依相關規定申請展期\r\n廠商尚未取得地方居民同意，待取得後，向市府申請土地容許，廠商評估是否申請展延中.\r\n3/26函文廠商同意展延第一階段使用期間(農水花蓮字第1148870723號)，4/9函請廠商繳納第一階段第一次展延(6個月)場地使用費(農水花蓮字第1148897420號).\r\n本處於114/8/26發函通知廠商第一階段使用期限第一次展期即將屆滿(農水花蓮字第1148897774號函)\r\n花蓮處已同意第一階段使用期限第二次展延(農水花蓮字第1148873560號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年4月17日辦理第一階段履約進度檢討會議，與廠商協議原則同意展延期限至116年5月31日止，惟須取得公證後切結書使得生效。","difficulty":"-","team_suggestion":"","note":""},{"_idx":43,"_kind":"solar_addendum","order":"15","no":"39","mgmt":"花蓮","contract_name":"太平渠圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"太平渠幹線(泰林段)","site_count":1,"capacity_mw":2.02040404400837,"current_stage":"土地容許","sign_date":"112/03/16","install_deadline":"116/5/31","expire_status":"未到期","current_operation":"114/2/24通知廠商第一階段二年期限即將屆，請廠商評估是否繼續執行契約，如需繼續請依相關規定申請展期\r\n廠商尚未取得地方居民同意，待取得後，向市府申請土地容許，廠商評估是否申請展延中.\r\n3/26函文廠商同意展延第一階段使用期間(農水花蓮字第1148870723號)，4/9函請廠商繳納第一階段第一次展延(6個月)場地使用費(農水花蓮字第1148897420號).\r\n本處於114/8/26發函通知廠商第一階段使用期限第一次展期即將屆滿(農水花蓮字第1148897774號函)\r\n花蓮處已同意第一階段使用期限第二次展延(農水花蓮字第1148873560號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年4月17日辦理第一階段履約進度檢討會議，與廠商協議原則同意展延期限至116年5月31日止，惟須取得公證後切結書使得生效。","difficulty":"","team_suggestion":"","note":""},{"_idx":44,"_kind":"solar_addendum","order":"15","no":"40","mgmt":"花蓮","contract_name":"太平渠圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"太平渠幹線(神農段)","site_count":1,"capacity_mw":1.51819854267369,"current_stage":"土地容許","sign_date":"112/03/16","install_deadline":"116/5/31","expire_status":"未到期","current_operation":"114/2/24通知廠商第一階段二年期限即將屆，請廠商評估是否繼續執行契約，如需繼續請依相關規定申請展期\r\n廠商尚未取得地方居民同意，待取得後，向市府申請土地容許，廠商評估是否申請展延中.\r\n3/26函文廠商同意展延第一階段使用期間(農水花蓮字第1148870723號)，4/9函請廠商繳納第一階段第一次展延(6個月)場地使用費(農水花蓮字第1148897420號).\r\n本處於114/8/26發函通知廠商第一階段使用期限第一次展期即將屆滿(農水花蓮字第1148897774號函)\r\n花蓮處已同意第一階段使用期限第二次展延(農水花蓮字第1148873560號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年4月17日辦理第一階段履約進度檢討會議，與廠商協議原則同意展延期限至116年5月31日止，惟須取得公證後切結書使得生效。","difficulty":"","team_suggestion":"","note":""},{"_idx":45,"_kind":"solar_addendum","order":"15","no":"41","mgmt":"花蓮","contract_name":"太平渠圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"太平渠幹線(哈拉灣段)","site_count":1,"capacity_mw":2.44563028636928,"current_stage":"土地容許","sign_date":"112/03/16","install_deadline":"116/5/31","expire_status":"未到期","current_operation":"114/2/24通知廠商第一階段二年期限即將屆，請廠商評估是否繼續執行契約，如需繼續請依相關規定申請展期\r\n廠商尚未取得地方居民同意，待取得後，向市府申請土地容許，廠商評估是否申請展延中.\r\n3/26函文廠商同意展延第一階段使用期間(農水花蓮字第1148870723號)，4/9函請廠商繳納第一階段第一次展延(6個月)場地使用費(農水花蓮字第1148897420號).\r\n本處於114/8/26發函通知廠商第一階段使用期限第一次展期即將屆滿(農水花蓮字第1148897774號函)\r\n花蓮處已同意第一階段使用期限第二次展延(農水花蓮字第1148873560號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年4月17日辦理第一階段履約進度檢討會議，與廠商協議原則同意展延期限至116年5月31日止，惟須取得公證後切結書使得生效。","difficulty":"","team_suggestion":"","note":""},{"_idx":46,"_kind":"solar_addendum","order":"15","no":"42","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"源城排水","site_count":1,"capacity_mw":2.677,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\r\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。","difficulty":"","team_suggestion":"","note":""},{"_idx":47,"_kind":"solar_addendum","order":"15","no":"43","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"新城圳幹線","site_count":1,"capacity_mw":0.821,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\r\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。","difficulty":"","team_suggestion":"","note":""},{"_idx":48,"_kind":"solar_addendum","order":"15","no":"44","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"豐裡排水","site_count":1,"capacity_mw":0.547,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\r\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。","difficulty":"","team_suggestion":"","note":""},{"_idx":49,"_kind":"solar_addendum","order":"15","no":"45","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"林田圳幹線","site_count":1,"capacity_mw":0.747,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\r\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。","difficulty":"","team_suggestion":"","note":""},{"_idx":50,"_kind":"solar_addendum","order":"15","no":"46","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"吉安圳","site_count":1,"capacity_mw":3.1888,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\r\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。","difficulty":"","team_suggestion":"","note":""},{"_idx":51,"_kind":"solar_addendum","order":"15","no":"47","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"林田圳2支線","site_count":1,"capacity_mw":1.309,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\r\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。","difficulty":"","team_suggestion":"","note":""},{"_idx":52,"_kind":"solar_addendum","order":"15","no":"48","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"豐村圳2支線","site_count":1,"capacity_mw":0.894,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\r\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。","difficulty":"","team_suggestion":"","note":""},{"_idx":53,"_kind":"solar_addendum","order":"15","no":"49","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"平林圳林榮支線","site_count":1,"capacity_mw":1.79,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\r\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\r\n114/12/22進度：本週無進度。\r\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。","difficulty":"-","team_suggestion":"","note":""}],"hydro_tender":[{"_idx":2,"_kind":"hydro_tender","serial":"","mgmt":"桃園","county":"桃園市","township":"龍潭區","land_section":"永福段","land_no":"0236-0000、0237-0000、0239-0000、0241-0000","contract_name":"桃園大圳導水路(2號水橋前上游段)小水力發電設備建置案","case_name":"桃園大圳導水路(2號水橋前上游段)小水力發電設備建置案","capacity_kw":254.3,"unit_count":1,"unit_capacity_kw":254.3,"tender_period":"第一次招商\r\n112/07/26-112/08/29\r\n第二次招商\r\n112/09/08-112/09/21\r\n第三次招商\r\n112/09/26-112/10/04","sign_date":"112/11/16","feeder":"○","internal_review":"Δ","taipower_review":"X","water_right":"X","water_structure":"X","soil_conservation":"X","land_permit":"X","electric_setup":"X","consent_filed":"X","briefing":"X","construction_permit":"X","estimated_completion":"117年06月","vendor":"霢霂能源開發股份有限公司","operation":"1.112/02/09 向台電申請饋線保留、台電於112/02/24同意保留饋線至113/02/23(桃園字第1121113512號函)。\r\n2.本案已於112年7月26日上網公告招標，09/05開標為流標，後訂於112年9月8日第二次上網公告招標，09/22開標為流標。本案再訂於112年9月26日第三次上網公告招標，10/05辦理開標(1家廠商投標)，於10/23辦理評選會議，霢霂能源開發股份有限公司為第一符合需要廠商。\r\n3.112/11/16 決標、簽約，廠商於簽約日5個月內提送營運計劃書(113年4月16日前)。\r\n4.113/01/19 辦理公證。\r\n5.113/04/15 廠商提送營運計劃書、113/04/30廠商提送營運計劃書(補正版)。\r\n6.113/07/02 辦理營運計畫書審查會，廠商修正計畫中(請廠商說明因流量不穩定，需在謹慎評估相關內容，已請廠商發文說明)。113/11/18廠商尚未發文說明。\r\n7.管理處於113/12/02函請廠商於12/13前提送修正後營運計劃書(農水桃園字第1138244472號)，因廠商無法於期限內提送資料，已請廠商於12/25至管理處說明，管理處召開綠能會議討論本案執行之方式，目前廠商已委請專業人員評估中。\r\n8.管理處於114/04/01召開綠能會議，會議結論請廠商於04/30前提出實質變更計畫並依委員意見第12點提出規格等相關比較表，業務單位將視情況召開實體會議辦理審查，並請鈞長裁決本案後續方向。\r\n9.廠商已於114/04/25函復相關資料。\r\n10.廠商已於114/05/09及05/22提出履約期限展延，管理處原則同意展延一年。\r\n11.管理處於114/06/09召開綠能會議，會議結論請廠商依本案招標文件及契約規定謹慎評估後於6/30前提送相關文件，業務單位再行召開會議辦理審查，決議本案後續方向。\r\n12.廠商於6/30檢送函文回覆委員意見(霢字第1140601號函)，因尚有需補充之資料，已請廠商補件。114/07/24廠商補充說明文件。\r\n13.管理處114/08/11農水桃園字第1148214146號函請廠商於11/08/25前提供替代方案之完整營運報告書以利審查。\r\n14.廠商114/08/21檢送函文申請展延提送營運計畫書之期限至114/12/31(霢字第1140801號函)。\r\n15.管理處業於114/09/04農水桃園字第1148214832號函請該公司提供展延進度期程甘特圖以利審核(農水桃園字第1148214832號函)，因未收到廠商回復，114/10/13管理處函請廠商於文到14日內提送上開資料，以利評估審核展延期限(農水桃園字第1148245616號函)。\r\n16.廠商於114/10/24提出甘特圖(霢字第1141001號)，因與先前提出展延時程不符，管理處業於114/11/06農水桃園字第1148215953號函請廠商於文到7日內修正說明，廠商於114/11/17霢字第1141101號函請管理處同意依日前所呈甘特圖(114/10/24霢字第1141001號函)進度辦理，管理處於114/12/04農水桃園字第1148216460號函請廠商仍於114年12月31日前提送營運計畫書。\r\n17.115/01/26：截至目前尚未收到廠商回文及相關資料，目前持續連繫廠商請該公司回文。\r\n18.115/02/02：115年2月2日農水桃園宇第1158210427號函，雙方合意終止契約。","difficulty":"-","planned_next":"","note":""},{"_idx":3,"_kind":"hydro_tender","serial":"1","mgmt":"苗栗","county":"苗栗縣","township":"公館鄉","land_section":"福東段","land_no":"483-0000","contract_name":"穿龍圳北幹線小水力發電建置案","case_name":"穿龍圳北幹線小水力發電建置案","capacity_kw":30,"unit_count":1,"unit_capacity_kw":30,"tender_period":"第一次招商\r\n112/08/31-112/09/19\r\n第二次招商\r\n112/09/25-112/10/04","sign_date":"112/12/01","feeder":"○","internal_review":"○","taipower_review":"X","water_right":"○","water_structure":"X","soil_conservation":"-","land_permit":"○","electric_setup":"X","consent_filed":"○","briefing":"X","construction_permit":"X","estimated_completion":"115年09月","vendor":"嘉德技術開發股份有限公司","operation":"1.苗栗縣政府公告東河排水\r\n2.第一次公告招標於112/08/31，112/09/20開標結果為流標。\r\n3.第二次公告招標於112/09/25，112/10/06開標。\r\n4.112/11/06辦理評選會議，112/11/09決標。\r\n6.112/12/01簽約，112/12/04公證。\r\n8.112/12/26函請台電保留饋線(農水苗栗字第1126404874)\r\n9.113/01/17台電函復保留饋線(苗栗字第1131710259號)\r\n10.113/02/21廠商向苗栗縣政府申請地面水水權\r\n11.113/04/03廠商提送營運計劃書。\r\n12.113/04/11取得水權登記(府水石字第1130075847號)\r\n13.113/06/03辦理營運計畫第一次審查會議，廠商修正計畫中\r\n14.113/06/06研商會議，請廠商施設前辦理宣導活動\r\n15.113/06/29廠商辦理敦親睦鄰計畫第一場宣導活動\r\n16.113/07/20紅棗節設攤展覽介紹小水力發電結合水圳文化，提升能源自主理念。\r\n17.113/08/16嘉德廠商檢送營運計畫書修正版至管理處審查。\r\n18.113/08/23廠商辦理敦親睦鄰計畫第二場宣導活動\r\n19.113/09/18管理處檢還審查意見回復資料，請廠商依意見回復修改後送管理處審查。\r\n20.113/09/26廠商辦理敦親睦鄰計畫第三場宣導活動\r\n21.113/11/14廠商辦理敦親睦鄰計畫第四場宣導活動\r\n22.113/11/16芋頭節設攤展覽介紹小水力發電結合水圳文化，提升能源自主理念。\r\n23.113/12/14福菜節設攤展覽介紹小水力發電結合水圳文化，提升能源自主理念。\r\n24.114/01/06針對計畫書內容部分，管理處已與廠商達成共識，目前廠商將計畫書送印，待送至管理處後，再進行後續審查。\r\n25.114/01/10廠商將修正營運計畫發文提交給管理處，114/01/22管理處已發文將營運計畫寄給審查委員進行後續審查。\r\n26.114/02/10收齊各審查委員的審查意見，114/02/12已發文給廠商進行第二次審查後修正。(農水苗栗字第1148400716號)\r\n27.114/02/18已收到廠商修正完成的電子版營運計畫，待正式收到書面報告後，就會發文通知廠商計畫書通過修正並進行下一階段工作。\r\n28.114/02/19收到廠商修正營運計畫來函((114)嘉技字第11400017號)，114/02/21已簽呈核准營運計畫備查，將發文給嘉德廠商進行後續作業。\r\n29.114/02/27已正式發文給嘉德廠商(農水苗栗字第1148400757號)，進行後續事項辦理。\r\n30.114/03/06嘉德廠商發文至苗栗縣政府工商處詢問土地管制容許((114)嘉技字第11400023號)及再生能源備案((114)嘉技字第11400024號)事宜。\r\n31.114/03/17苗栗縣政府於回函嘉德廠商(府商用字第1140048437號)，於發文日30日內將修正後計畫書再提送給苗栗縣政府。\r\n32.114/03/21廠商提送土地容許修正計畫書給苗栗縣政府(114)嘉技字第11400033號函。\r\n33.114/04/17縣政府還在審核計畫書修正。\r\n34.114/04/28本案場案件尚在縣政府行政流程作業中。\r\n35.114/05/15另因行政流程作業需要，管理處依照契約書第4條第7點非因歸責於乙方之情形同意展延籌設許可90日，從5/24延長至8/22，此公文預計下周發文。\r\n36.114/5/19發文給廠商同意展延籌設許可(農水苗栗字第1148400973號)。\r\n37.嘉德公司於114/6/5重新提送區域排水水利建造物暨使用許可申請計畫書。\r\n38.苗栗縣政府預計於114/7/3辦理區域排水水利建造物暨使用許可申請計畫書審查會議。\r\n39.114/11/11已取得土地容許使用許可，申請同意備案中。\r\n40.114/12/23縣政府已同意備案，目前正在準備與公用售電業辦理簽約及施工前說明會等事項。\r\n41.115/2/5 施工前說明會\r\n42.115/4/24 提送施工計畫書\r\n43.115/6/5 案場開工","difficulty":"-","planned_next":"","note":"114/5/23前要完成土容、再生能源備案、區排排水構造物申請\r\n籌設許可期限自114年8月22日起延長至114年11月19日止(農水苗栗字第1148372431號)。"},{"_idx":4,"_kind":"hydro_tender","serial":"2","mgmt":"臺中","county":"臺中市","township":"后里區","land_section":"后安段","land_no":"0044-0000","contract_name":"后里圳后里區后安段0044-0000地號小水力發電設備建置","case_name":"后里圳后里區后安段0044-0000地號小水力發電設備建置","capacity_kw":60,"unit_count":4,"unit_capacity_kw":15,"tender_period":"第一次招商\r\n110/04/26-110/05/18\r\n第二次招商\r\n110/05/28-112/06/08","sign_date":"110/08/28","feeder":"-","internal_review":"111/04/26營運計劃書","taipower_review":"111/12/8申請併聯審查\r\n112/06/16併聯審查同意辦理","water_right":"111/06/21申請水權\r\n111/07/20取得水權登記","water_structure":"○","soil_conservation":"-","land_permit":"112/10/24申請水利用地土地許可使用\r\n113/02/06取得土地許可使用","electric_setup":"-","consent_filed":"113/02/25申請同意備案\r\n113/03/19取得同意備案","briefing":"-","construction_permit":"-","estimated_completion":"114年2月\r\n114年10月(重新完成台電併網)","vendor":"恆水創電股份有限公司","operation":"恆水創電股份有限公司113/4/30回覆：\r\n1.已有申請水權(已取得-經濟部經授水字第11120212260號水權狀)\r\n2.已取得台電同意辦理與併聯審查意見書函(1120616台電同意函)\r\n3.113年2月6日取得臺中市政府土地容許使用(府授經公字第1130030417號函)。 \r\n4.恆水創電於113年3月19日已取得臺中市政府(113年3月19日府授經公字第1130072688號) 再生能源發電設備同意備案。\r\n5.113/03/25本管理處發函同意恆水創電進場施作。\r\n6.恆水創電於113年3月25日已進入案場(后安段44地號)進行土建工程施工\r\n7.113/07/05目前持續土建工程施工中。 \r\n8.渠道牆上半部、頂版鋼筋綁紮，回填土方整理、搬運 。\r\n9.113/09/13展延致113/10/31。\r\n10.113/10/07主結構體完工，鄰近租用土地復原及道路復原，待機組進場測試。\r\n11.鄰近租用農地復原、機組已運至中部倉庫待月中安裝、倒伏堰預計協調停水時間後設置。\r\n12.113/11/28開通新設水道之引水入口及退水出口，維持圳路通水狀況。完成臨時擋水，預計12月第二周完成倒伏堰安裝及測試。\r\n13.113/12/20完成倒伏堰及進水閘門安裝。\r\n14.113/12/27機組安裝中，預計周末完成。\r\n15.114/01/03 已竣工。\r\n16.114/02/05 完成併聯試運轉(完工併網)，114/2/14台電函覆併聯躉售(台中字第1148017784號)。\r\n20.114/09/30 啟用典禮。\r\n21.廠商向臺中市政府申請設備登記於114年 4 月遭退件，114年9月再申請，114年9月22日亦因未能於與公用售電業簽約後 1 年內完成設備登記而遭駁回(府授經公字第1140290159號)，致同意備案失效。\r\n22.廠商114/10/15重新向台電完工併網(台中字第1148149410號)，114/12/03向管理處重新申請竣工函，以利重新申請設備登記(恆水字第11412030010號)，管理處114/12/26重新核發竣工函(農水臺中字第1148450327號)。\r\n23.115/05/05 重新申請同意備案中。","difficulty":"-","planned_next":"重新申請同意備案","note":"原規劃31.3kw\r\n114/10/15重新向台電申請併網(台中字第1148149410號)\r\n114/12/03重新申請竣工函，(恆水字第11412030010號)，114/12/26重新核發竣工函(農水臺中字第1148450327號)"},{"_idx":5,"_kind":"hydro_tender","serial":"3","mgmt":"臺中","county":"臺中市","township":"豐原區","land_section":"師範段","land_no":"1089-0000、1181-0001、1286-0000、1287-0000、1288-0000","contract_name":"南幹線豐原區師範段 1286 地號等小水力發電設備建置","case_name":"南幹線豐原區師範段 1286 地號等小水力發電設備建置","capacity_kw":560,"unit_count":1,"unit_capacity_kw":560,"tender_period":"110/10/04-110/10/26","sign_date":"110/12/26","feeder":"-","internal_review":"○","taipower_review":"111/04/27申請併聯審查\r\n111/08/23併聯審查同意辦理\r\n113/5/3第二次申請，待核發","water_right":"X","water_structure":"X","soil_conservation":"-","land_permit":"○\r\n112/07/27申請土地容許使用\r\n112/09/06通知逾期未補正，駁回申請案\r\n113/01/23第三次申請，\r\n113/03/06駁回申請案，\r\n113/09/10第四次申請，駁回申請案\r\n114/06/04第五次申請\r\n114/09/05土地容許同意(府授都企字第1140269210號)","electric_setup":"X","consent_filed":"○\r\n114/09/17取得經發局再生能源發電設備同意備案(府授經公字第1140278082號","briefing":"X","construction_permit":"-","estimated_completion":"114年11月","vendor":"森崴能源股份有限公司","operation":"1.110/12/26 簽約。\r\n2.111/09/07 市府因廠商未於期限內補正資料，暫不同意容許使用。\r\n3.111/08/23 取得台電併聯審查700kW。\r\n4.112/07/27 向臺中市政府都發局申請都市計畫區土地容許使用。臺中市政府都發局112/07/31函知送審文件尚有缺件需補正。目前函知廠商準備補正文件送臺中市政府都發局補正辦理作業。\r\n5.因案場部分土地牽涉活動斷層地質敏感區，迄今尚無法補正。112年9月6日臺中市政府回復本署都市計畫農業區土地容許使用一案，因逾期未補正，市府予以駁回申請案(詳臺中市政府112年9月6日府授都企字第1120258340號函)。\r\n6.112/10/25 管理處同意廠商先行施作(農水臺中字第1126450609號函)。\r\n7.森崴能源股份有限公司於112年11月間已申請豐原地政事務所，並完成師範段1286地號土地分割。 \r\n8.俟森崴能源股份有限公司齊備相關書件，管理處再以新申請案件辦理土地容許使用。 \r\n9.113/07/05 現地進行進水渠道施工作業(進度20%)。\r\n10.113/08/12 渠道工程已接近完成，需待停水後進行破堤工作(約7天)，進尾水口完成後可將南幹渠引水至新設渠道，再接續安裝自動倒伏堰。土地容許案件需先行辦理指定建築線申請，因受限法規6米寬道路，需待現場修整過後方能辦理，預計08/16前完成後重新申請建築線。\r\n11.113/09/05 取得建築線申請回函；113/09/10第四次提送土地容許使用申請。\r\n12.都發局駁回土地容許申請案。\r\n13.113/11/28 進行公用事業設施審查會議。\r\n14.計畫書修正後將再提送土地容許使用申請，主要為修正基地聯外道路規劃。\r\n15.廠商與台中農業局討論，擬將籌設事業計畫書及農地變更使用說明書合併審查，預計02/14前提送。\r\n16.因時程關係，廠商擬變更機房設計，改以設備平台(無設置屋頂)方式進行，台中都發局建管科表示如無建物則免申請建、雜照，故廠商將於台中經發局籌設事業計畫核准後向管理處申請變更興建計畫。\r\n17.有關小水力案場之機房是否得免申請建、雜照一事，後續由廠商向管理處(署)提出請求認定後再轉由中央單位協助認定。\r\n18.廠商114/02/14提送籌設計畫書(森字第1140000029號)。\r\n19.114/02/27 廠商修正籌設事業計劃書。114/04/29取得台中市政府經發局公用事業設施認定函(府授經公字第1140100136號)，並送都發局審核，工程無進度。\r\n20.114/05/29 目前進度如1.建築線-已呈核，待長官核准後即可核發建築線。2.農變審查-核發農變同意函(114/05/29同意函中市農地字第1140021248號)。3.土地容許申請-待取得建築線及農變同意函後即提出。4.併聯審查意見書申請中。5.水權申請-5/26履勘，再由區公所公告15天後核發。\r\n21.114/06/04 第五次申請土地核准使用(森字第1140000078號)。\r\n22.114/06/12 土地容許都發局會勘完成(中市都企字第1140127164號函)，並修正資料。\r\n23.114/09/03 廠商繳納農業用地變更回饋金及都市計畫土地容許使用計畫書給都發局並通知管理處(森字第1140000113號函)。 \r\n24.114/09/05 臺中市政府核發土地使用許可函(府授都企字第1140269210號)。\r\n25.114/09/17 取得經發局再生能源發電設備同意備案(府授經公字第1140278082號)。\r\n26.114/11/20 案場完工倂網(公文待台電發文)。\r\n27.115/06/01 申請設備核准 同意備案編號：TXG-114HP0001","difficulty":"","planned_next":"","note":"原規劃580kw，取得台電併聯審查同意700kW。"},{"_idx":6,"_kind":"hydro_tender","serial":"4","mgmt":"彰化","county":"彰化縣","township":"溪州鄉","land_section":"大庄段","land_no":"0532-0000","contract_name":"莿仔埤圳幹線溪州鄉大庄段小水力發電設備建置案","case_name":"莿仔埤圳幹線溪州鄉大庄段小水力發電設備建置案","capacity_kw":180,"unit_count":2,"unit_capacity_kw":90,"tender_period":"111/12/29-112/1/31","sign_date":"112/3/23","feeder":"○","internal_review":"○","taipower_review":"○","water_right":"○","water_structure":"○","soil_conservation":"-","land_permit":"○","electric_setup":"X","consent_filed":"○","briefing":"○","construction_permit":"X","estimated_completion":"115年1月底月","vendor":"恆水創電股份有限公司","operation":"1.111/12/28 上網公告招標，112/01/31開標(3家廠商投標)。\r\n2.112/02/16 14:00召開評審會議。\r\n3.112/02/23 決標。\r\n4.112/03/23 公證簽約。\r\n5.112/06/10 廠商準備興建計畫書中。\r\n6.112/07/21 廠商(恆水創電股份有限公司)來函檢送\"\"莿仔埤圳幹線溪州鄉大庄段小水力發電設備建置營運計劃書\"\"及協助保留台電饋線申請。\r\n7.112/07/26 函請台電協助保留饋線(農水彰化字第1126542217號)。\r\n8.112/08/10 台電函復保留饋線(彰化字第1121235849號)。\r\n9.112/09/12 函請廠商(恆水創電股份有限公司)重新提送計畫書，廠商重新提送(恆水字第1126556555)。\r\n10.113/01/16管理處同意核定恆水創電營運計劃書(農水彰化字第1126544436號)。\r\n11.113/02/06 水權線上申請。\r\n12.113/03/05 溪州鄉大庄村下午2點於開天官廣場召開地方說明會(恆水字第11302190009號)。\r\n13.113/03/08 水利署水權會勘。113/03/21 經濟部水權公告15日。113/04/29 經濟部核發水權狀(經授水字第11360007960號)。\r\n14.113/05/15 土地容許申請。\r\n15.113/05/31 水利建造物申請。113/06/25縣府函文請廠商詢問水資源分署(府水管字第1130239571號)。\r\n16.113/07/05 廠商向經濟部水利署中區水資源分署申請水利建造物(恆水字第1130705001號)。\r\n17.113/07/23 經濟部水利署中區水資源分署審查水利建造物合於規定，移請水利署准予發給建造核准文件(水中養字第11350031700號)。113/07/26(經水政字第11351057870號)，113/08/07經濟部水利署中區水資源分署函覆爰應向地方主管機關申請(水中養字第11350035510號)。\r\n18.113/08/20 廠商函復水利署有關水權狀應行記載事項「水利建造物建造核准」乙事 (恆水字第1130820001號)。\r\n19.113/08/21 申請台電併聯審查。\r\n20.113/08/27 彰化縣政府函退廠商申請土地容許審請文件，並請廠商依說明修正文件。(府綠用字第1130186061號)。113/09/05 廠商來文請管理處協助函送修正版土地容許使用文件(恆水字第1130905001號)。\r\n21.113/09/05 廠商向彰化縣政府重新申請水利建造物合格證明(恆水字第1130905002號函)。\r\n22.113/09/05廠商請管理處協助用印土地容許申請文件並提送至彰化縣政府(恆水字第1130905001號函)，113/09/10 管理處協助廠商函送修正版土地容許使用申請文件(農水彰化字第1138543874號)。\r\n23.113/10/04 台電併聯審查排審。\r\n24.113/10/28 水利建造物申請，縣府實地履勘(府水管字第1130408515號)。\r\n25.訂於113/11/18請廠商至管理處說明案件進度及進度落後檢討報告計畫。113/12/04 函文廠商「進度落後提檢討報告暨協商會」會議紀錄(農水彰化字第1138557415號)。\r\n26.113/11/13廠商請管理處提供圳路使用同意函(恆水字第1131113001號函)。113/11/28管理處提供廠商同意備案申請所需圳路使用同意函(農水彰化字第1138547153號)。\r\n27.113/11/21 縣府回函廠商補正後提供計劃書(府綠用字第1130354743號)。\r\n28.113/12/09 取得縣府水利建造物同意函，核准期間自113年12月1日起至114年8月27日止 (府水管字第1130474321號)。\r\n29.113/12/16 廠商依據彰化縣政府土地容許審查意見，函詢彰化縣政府水資處有關地質敏感區(地下水補注)意見(恆水字第1131216001號)。\r\n30.113/12/17 台電核發併聯審查同意函(彰化字第1138163608號)。\r\n31.113/12/20 彰化縣政府水資處函覆廠商，有關本案非屬土地開發行為所稱之各類情形之一，無須依地質法第8條規定辦理基地地質調查及地質安全評估(府水管字第1130495057號)。\r\n32.113/12/25 廠商來函檢送修正後土地容許使用申請書，申請管理處用印並函轉縣府(恆水字第1131225001號)。113/12/31 協助廠商函送縣府修正後土地容許使用申請書及相關文件(農水彰化字第1138545602號)。\r\n33.114/02/11 取得縣府土地容許同意函 (府綠用字第1140001082號)，114/2/12申請同意備案。\r\n34.114/03/20 取得縣府同意備案函 (府綠用字第1140054926號)。\r\n35.114/04/07 廠商函詢縣府建設課是否需申請雜照(恆水字第11404070010號) / 工程部分與承包商確認工期及細部設計。\r\n36.114/04/16 縣府函復得免申請建築執照(府建管字第1140144672號)。\r\n37.114/04/30 管理處函請廠商盡速進場施作(農水彰化字第1148558343號函)。\r\n38.114/06/12 機台於國外測試中，發電機組製作中。\r\n39.114/06/10 廠商依114/04/30農水彰化字第1148558343號函，來文請求召開協商會議，時間待定(恆水字第11406100010號函)。\r\n40.114/07/08召開協商會議。\r\n41.114/07/10 廠商來文申請展延工期(恆水字第11407100010號)。\r\n42.114/07/28 管理處同意併聯掛錶日由114年8月12日展延至115年1月26日(農水彰化字第1148536112號)。\r\n43.114/07/30 廠商向彰化縣政府申請水利建造物核准期限展延至115年1月26日(恆水字第11407300010號)。\r\n44.114/08/04 彰化縣政府同意廠商水利建造物核准期限展延申請至115年1月26日(府水管字第1140302714號)。\r\n45.114/08/05 廠商檢送與大莊國民小學獎學金回饋協議書(恆水字第11408050020號)，該協議與本處無涉，契約內容無相關規定，依據該份協議書廠商每年提供大庄國民小學6000元獎學金。\r\n46.114/09/04 廠商與供應商、OEM廠商進行簽約發包及討論。\r\n47.114/09/25 廠商來函申請建桿同意書及配電場同意書用印(恆水字第11409250010號函)。\r\n48.114/10/30 檢還廠商已用印台電建桿及配電場同意書；主體工程預計於年底斷水期進場施工。\r\n49.114/11/27 辦理施工前說明會(恆水字第11411130010號)。\r\n50.114/12/03函請廠商儘速向管理處申請施工許可並於斷水期進場施作(農水彰化字第1148561011號)。\r\n51.115/01/19廠商進行案場地質鑽探工程。\r\n52.115年4月22日召開第2次催告履約協商會議，完工期限為115年7月28日。\r\n53. 115/4/30 本處函文廠商協商會議紀錄及依契約規定進行第2次催告\r\n54. 115/4/30 為利設施配置、周邊環境整體評估及整合地方意見，廠商辦理現地會勘。\r\n55. 115/5/6 廠商向彰化縣政府申請水利建造物核准期間展延。\r\n56. 115/5/12 函請廠商繳納懲罰性違約金10萬元，廠商當日即繳納。\r\n57. 115/5/13 彰化縣政府同意水利建造物核准期限展延至115/7/28。\r\n58. 115/5/18 廠商向彰化縣政府報請開工。\r\n59. 115/5/25 彰化縣政府函復廠商所報開工事項同意備查。\r\n60. 115/6/2 廠商向本處報請開工。\r\n61. 115/6/5 同意廠商進場施作。","difficulty":"-","planned_next":"","note":"2025年5月為廠商預定完工日。\r\n契約規定併聯掛錶試運轉日最遲為2025年8月12日。同意展延併聯掛錶日至115年1月26日(農水彰化字第1148536112號)。"},{"_idx":7,"_kind":"hydro_tender","serial":"5","mgmt":"南投","county":"南投縣","township":"埔里鎮","land_section":"福興段","land_no":"0022-0000、0022-0001、0022-0002、0099-0000","contract_name":"能高大圳東幹線 0k+000~0k+120 小水力發電設備建置","case_name":"能高大圳東幹線 0k+000~0k+120 小水力發電設備建置","capacity_kw":490,"unit_count":1,"unit_capacity_kw":490,"tender_period":"","sign_date":"112/1/19簽約\r\n112/3/22公證","feeder":"○","internal_review":"○","taipower_review":"○","water_right":"○","water_structure":"○","soil_conservation":"○","land_permit":"○","electric_setup":"-","consent_filed":"○","briefing":"○","construction_permit":"-","estimated_completion":"114年05月","vendor":"霖全能源股份有限公司","operation":"1.111/09/02 公告招商(10/04開標)，111/11/01 無優勝廠商。\r\n2.111/11/11 第二次招商，111/12/19辦理評選。\r\n3.111/12/19 決標(霖全能源股份有限公司)。\r\n4.112/01/19 簽約，112/03/22契約書公證。\r\n5.112/01/30 台電同意併聯電力計畫展延一年。\r\n6.112/04/06 取得南投縣政府同意林業用地做非林業使用(用地變更)。\r\n7.112/05/25 取得南投縣政府簡易水保同意。\r\n8.112/06/12 取得林業用地許可做再生能源發電設施(小水力發電)使用。\r\n9. 112/07/18 向經濟部水利署申請水權登記、南投縣政府申請第三型發再生能源同意備案。\r\n10.112/08/02 上池地質鑽探及試驗。\r\n11.112/09/10 壓力管墩座設計。\r\n12.112/09/18 經濟部水利署核發水權狀(第11120006號)。 \r\n13.112/09/28 簡易水保工程開工。\r\n14.112/11/03 取得管理處水利建造物兼作使用許可 。\r\n15.112/11/23 取得南投縣政府第三型再生能源同意備案。\r\n16.112/11/28 辦理地方說明會。\r\n17.112/11/29 開工典禮。\r\n18.113/01/15 進場整地施工。\r\n19.113/02/27 南投縣政府辦理本案場連外道路「112年7月杜蘇芮吉8月卡努颱風H3-123埔里鎮福興里長福長路能高瀑布旁農路災修復建」管制進出，致影響本案施工機具進出。\r\n20.113/03/13 土木工程期預估在3-11月，11月水輪機會抵達台灣進行安裝。\r\n21.113/05/23 與台電簽約第三型小水力發電系統電能購售契約。\r\n22.113/06/04 南投縣政府邀集相關單位進行現場勘查與討論解決辦法；該府基於安全考量，故於該處之災修工程未完成前禁止所有人車通行。\r\n23.113/06/04 另該公司申請變更原直提式水門更改為倒伏堰會勘，請該公司須提出倒伏堰變更設計及既有舊渠道改善更新方案，並建議另外設置水位計以便觀察流量與調節。\r\n24.113/07/23 管理處函請縣府惠予儘速疏通復建聯外道路，俾利人車通行。\r\n25.113/07/30 凱米颱風造成案場周遭邊坡土石滑落、樹木傾倒，聯外道路緊臨時搶通尚未復健完妥，目前仍無法通行重機械及運輸。\r\n26.113/09/16 坍方路段南投縣政府委任施工廠商臨時搶通該路段，完整修復估計需到明(114)年年中。現場評估該路段目前路寬及路況僅適合小型車輛及人員通過，大型施工機具仍無法通過，目前廠商正評估拓寬坍方路段上方道路之可行性以利案場機具運輸施作。\r\n27.113/10/09 檢送兼作使用變更設計申請書至管理處進行審查中。\r\n28.113/10/30 台電邀集國產署中區分署南投辦事處辦理霖全公司申請小水力發電案併網工程現場建桿位置土地同意會勘。\r\n29.113/11/03 廠商先行整地以利施工機具得以通行。\r\n30.113/11/20 經審查後管理處同意兼作使用變更設計。\r\n31.114/01/02 廠商正研擬水門細部設計中。114/01/15 與營造廠協調工班及工期中。114/02/20 與電機技師至現場會勘。\r\n32.114/02/26 廠商本周進行壓力管水平段的放樣及路徑開路。\r\n33.114/03/20 與縣府發包之道路邊坡施工得標廠商洽商承接本小水力案之可行性。\"\r\n34.114/03/26 向管理處申請展延建置期限，因南投縣政府執行之災修工程路段土石坍方造成施工道路中斷，嚴重影響本案工程進度。\r\n35.114/03/27 縣府發包之道路邊坡施工得標廠商尚在評估是否承接中。\r\n36.114/04/08 縣府發包之道路邊坡施工得標廠商有意願承接部分工程。\r\n37.南投縣府於114年4月16日函復該公司，本案因「道路坍方造成工程受阻」，同意依規定展延6個月至114年11月23日(府建發字第1140075176號函)。\r\n38.114/05/13 管理處函復該公司同意辦理展延6個月至114年11月23日並請該公司克服困難加速趕工(114年5月13日農水南投字第1148490786號函)。\r\n39.114/05/26 因工程較複雜仍有許多細節待討論。\r\n40.114/08/05廠商近期將進場施作土建工程。\r\n41.日前廠商於114年9月10日向管理處申請第二次建置期限展延6個月(霖全-能高字第1140910001號函)；並於114/09/23向南投縣政府申請第二次建置期限展延(霖全-能高字第1140923001號函)，因南投縣政府執行之災修工程路段土石坍方造成施工道路中斷，嚴重影響本案工程進度。\r\n43.114/10/20縣府同意第二次建置期限展延至115/05/23日(府建發字第1140223808號)；114/11/07管理處同意廠商建置期限第2次展延至115年05月23日(農水南投字第1148491872號)。\r\n43.115/05/05目前土建工程施工中，建置期限3次展延至115年11月23日。","difficulty":"-","planned_next":"","note":"建置期限展延申請中"},{"_idx":8,"_kind":"hydro_tender","serial":"6","mgmt":"雲林","county":"雲林縣","township":"莿桐鄉","land_section":"新庄子段","land_no":"2842-0000、2843-0000","contract_name":"濁幹線雲林縣莿桐鄉新庄子段小水力發電設備建置案","case_name":"濁幹線(3K+100)莿桐鄉新庄子段小水力發電廠(經一)","capacity_kw":800,"unit_count":2,"unit_capacity_kw":400,"tender_period":"","sign_date":"110/10/14","feeder":"○","internal_review":"○","taipower_review":"○","water_right":"○","water_structure":"○","soil_conservation":"-","land_permit":"○","electric_setup":"○","consent_filed":"○","briefing":"○","construction_permit":"○","estimated_completion":"115年4月","vendor":"經一綠能股份有限公司","operation":"1.營運計劃書正在修改中(7處水門權責問題討論完畢)。\r\n2.案場計畫書已通過。\r\n3.112/02/10辦理地方說明會，後續準備申請電業籌設。\r\n4.112/02/24進場拆除既有圍籬，現地尚未開挖。\r\n5.濁幹線堤岸加高工程完成。\r\n6.取得電業籌設許可函，許可函號: 經授能字第11200345660號。\r\n7.113/07/05現地進行引水排水設施施工作業(目前該案場為配合管理處灌溉用水通水，暫停施工)。\r\n8.113/10/18取得土地容許函，府建行一字第1133947736號。\r\n9.113/04/30取得同意備案函，府建行二字第1130034723號。\r\n10.114/01/21取得能源署施工許可核准(經授能字第11300207620號)。\r\n11.114/02/14發電廠出水尾水管固定(鋼筋捆紮)。\r\n12.114/02/20尾水管固定與混凝土澆置固定。\r\n13.114/02/27尾水管固定、混凝土澆置完成，廠房地下一樓樓板施做中。\r\n14.114/03/05尾水管及地下一樓地板混凝土澆置完成。\r\n15.114/03/14預計下週水輪機組吊掛進場安裝。\r\n16.114/03/21水輪機組安裝完成。\r\n17.114/03/31溢流道平面鋼筋捆紮完畢。\r\n18.114/04/10電廠B1樓版及維修空間混凝土澆置完成。\r\n19.114/04/30溢流道施作完成。\r\n20.114/05/09水輪機廠房牆身及機房地基建置中。\r\n21.114/05/29機電設備廠區大底混凝土澆置完成、進水口破堤切割完成。\r\n22.114/06/12機電廠房鋼骨組立，進水口已破堤完成。\r\n23.114/06/27鋼構發電廠房建設中。\r\n24.114/08/21鋼構發電廠房持續建設中。\r\n25.直至114/10/16機電廠房持續建設中。\r\n26.114/10/30機電廠房持續趕工中，配合濁幹線通水期程，預計115.4.30完成併聯。\r\n27.114/11/13機電廠房持續趕工中，機電程式測試中，前後水門吊門機和兩組水輪機組發電機預計11/14安裝完成。\r\n28.114/11/27電機安裝完成、機電程式測試中。\r\n29.114/12/10外牆防水工程進行中，備用電源安裝完成(台電已送電)、台電端至電廠高壓電纜線佈設完成、機電程式靜態測試中。\r\n30.114/12/22外牆工程持續施工中、機電設備進場施作中。\r\n31.115/01/14外牆工程完工、水輪機和發電機線路配置施工完成、機電機組程式靜態測試持續中。\r\n32.115/01/22電廠外排水渠道施工完成、台電PT、CT安裝中，台電預計這星期送電。\r\n33.115/01/28台電PT、CT安裝中，討論試水作業中。\r\n34.115/02/04台電PT、CT安裝中，討論試水作業中。\r\n35.115/02/10台電PT、CT安裝中，試水作業中。\r\n36.115/02/13台電併聯作業中。\r\n37.115/02/25台電併聯作業中。\r\n38.115/03/04台電已併聯。\r\n39.115/06/01台電已併聯。","difficulty":"-","planned_next":"","note":""},{"_idx":9,"_kind":"hydro_tender","serial":"7","mgmt":"雲林","county":"雲林縣","township":"莿桐鄉","land_section":"四合段","land_no":"0289-0000","contract_name":"鹿場課圳七號跌水工水力發電案","case_name":"鹿場課圳七號跌水工小水力發電廠(恆水)","capacity_kw":130,"unit_count":1,"unit_capacity_kw":130,"tender_period":"","sign_date":"111/06/21","feeder":"○","internal_review":"○","taipower_review":"○","water_right":"○","water_structure":"○","soil_conservation":"-","land_permit":"○","electric_setup":"-","consent_filed":"○","briefing":"Δ","construction_permit":"X","estimated_completion":"115年5月","vendor":"恆水創電股份有限公司","operation":"1.111/06/21辦理公證簽約。\r\n2.111/09/29向經濟部水利署申請地面水水權登記。\r\n3.111/10/17向台電申請饋線保留。\r\n4.111/11/03向雲林縣政府地政處申請非都市土地容許使用(恆水字第1111103001號)。\r\n(再生能源發電設備第三型，台電併聯審查後接著縣市政府經發局同意備案)。\r\n5.111/12/12 目前進入水權公告期，預計再一個月水權就會核發。\r\n6.111/12/12因進一步考量河防安全及周遭農田側排有意將原先130KW調回原來的100KW。\r\n7.已取得水權狀:112年1月13日經授水字第11200003730號。 \r\n8.111/12所送案場計畫書初審上有缺漏，已退回補件中。\r\n9.112/02/10廠商修正計畫書中。\r\n10.112/03/09已提送案場計畫書，評審委員召集中。\r\n11.112/03/23取得台電併審意見。\r\n12.112/04/11已開會辦理營運計畫書審查，營運計畫書修正中。\r\n13.113/04/12已取得水利建造物許可函，113年3月25日(府水政二字第1133716884號)。\r\n14.取得同意備案113年5月7日府建行二字第1133923454號。\r\n15.土地容許申請中，於113年8月30日補件。\r\n16.土容補件完成，縣府審核中。\r\n17.113/12/20土容取得，準備施工前說明會中。\r\n18.廠商預計於114/02/21上午11點辦理地方施工前說明會。\r\n19.114/02/07管理處函文同意廠商展延履約期限，自114/03/05展延至114/08/13(農水雲林字第1148580044號)。\r\n20.114/02/21施工前說明會順利辦理完成，預計3月初進場施作。\r\n21.114/03/05預計114/03/07進場施作，場地整理。\r\n22.114/03/14等廠商安排時間進場(廠商目前尚未提供確切時間)。\r\n23.114/03/21預計下周假設工程進場。\r\n24.114/03/31圍籬設置完畢，機具尚未進場。\r\n25.114/04/10等待廠商進場施工。\r\n26.114/04/30工地整理，鋼軌樁打樁完成準備下挖地基。\r\n27.114/05/08基礎開挖之鋼軌樁打設完畢。\r\n28.114/05/29廠房大底混凝土澆置完成，牆身鋼筋組立中。\r\n29.114/06/12廠房牆身鋼筋模板組力完成，進水口植筋拉拔試驗完成。\r\n30.114/06/27廠房地下部分建置完畢，廠房地上部分鋼筋模板組立中。\r\n31.114/08/21廠房地下建置完畢，廠房地上部分鋼筋模板組立中。\r\n32.直至114/11/27持續施工中。\r\n33.114/12/10渠道破堤工程進行中。\r\n34.114/12/22渠道破堤及傾倒式水門建置中。\r\n35.115/01/14渠道破堤及傾倒式水門建置完成，導葉安裝完畢，內部泥作施工中。\r\n36.115/01/22內部泥作完成。\r\n37.115/01/28周遭排水渠道準備施工。\r\n38.115/02/04周遭排水渠道放樣完畢。\r\n39.115/02/10周遭排水渠道放樣完畢。\r\n40.115/02/13等待水輪機組進場。\r\n41.115/02/25等待水輪機組進場。\r\n42.115/03/04等待水輪機組進場，周邊工程進行中。\r\n43.115/06/01等待水輪機組進場。","difficulty":"-","planned_next":"","note":"原規劃100kW"},{"_idx":10,"_kind":"hydro_tender","serial":"","mgmt":"雲林","county":"雲林縣","township":"林內鄉","land_section":"芎蕉段","land_no":"0001-0000","contract_name":"鹿場課圳第一、二、三號跌水工水力發電案","case_name":"鹿場課圳第一、二、三號跌水工小水力發電廠(台塑)","capacity_kw":475,"unit_count":2,"unit_capacity_kw":13182157,"tender_period":"","sign_date":"111/07/07","feeder":"○","internal_review":"○","taipower_review":"○","water_right":"○","water_structure":"○","soil_conservation":"-","land_permit":"○","electric_setup":"-","consent_filed":"○","briefing":"○","construction_permit":"○","estimated_completion":"114年4月","vendor":"台塑石化股份有限公司","operation":"1.111/11/09前提送籌設許可，興建、營運計畫書。\r\n2.111/10/17向台電申請饋線保留。\r\n3.111/12所送案場計畫書初審上有缺漏，已退回補件中。\r\n4.112/04/24 廠商規畫設置2組機組(318+157=475kW)，預定5/2召開審查會議。\r\n5.112/05/02已開會辦理營運計畫書審查，營運計畫書修正中。\r\n6.112/05/18水利署水權狀核發會勘。\r\n7.112/07/06取得水利署水權狀，於7/21召開地方說明會。\r\n8.112/07/18營運計劃書核定完畢。\r\n9.112/07/31取得台電併審意見。\r\n10.土地容許申請中。\r\n11.取得水利建造物許可。\r\n12.112/11/23取得同意備案函文。(備案編號: YUN-112HP0001、YUN-112HP0002)。\r\n13.已取得土地容許函，113年4月24日(府建行一字第1133915336號)。\r\n14.113/07/08-1廠尚未動工，2廠開挖完成，準備尾水渠道工程施作。\r\n15.一廠113/09/12電廠出水口及發電機組底座完成，二廠113/09/19電廠本體大底完成。\r\n16.10/24時一廠 完成電廠出水口及發電機組底座。二廠10/24時，取水口箱涵及尾水渠道工程大致完成。\r\n17.1廠電廠進出水口及發電機廠房底座完成。2廠取水口箱涵、廠房底座、出水口及尾水明渠段均已施作完成。\r\n18.1廠進水明渠側牆板模組組立中；出水箱涵大底澆置完成。2廠進水明渠大底鋼筋組立中。\r\n19.113/11/20二廠水輪機組裝設完成。\r\n20.113/11/26一廠進水段箱涵襯底完成。二廠進水段側牆鋼筋模板組立。\r\n21.113/12/13一廠水輪機組吊掛中，二廠進水明渠段完成。\r\n22.113/12/20一廠進水箱涵施作中，二廠進水倒伏堰施作中。\r\n23.113/12/27一廠取水破堤、進水箱涵鋼筋模板組立中，二廠溢流道施作中。\r\n24.114/01/03一廠進水箱涵混凝土澆置完畢、溢流道鋼筋組立中，二廠溢流道鋼筋模板組立中。\r\n25.114/01/10一廠發電機進水模組組立、進水箱涵完成、廠房基座澆置完成。\r\n26.114/01/16一廠廠房鋼構建立中、水輪機組固定鋼筋與尾水渠道箱涵鋼筋模板組立中。二廠的廠房鋼構建立中、溢流道混凝土澆置完成。\r\n27.114/01/23一廠已修復過路破堤引水箱涵，並完成路面回復。二廠無更新進度。\r\n28.114/02/14一廠一樓牆身灌漿與廠外聯絡道路整理修復。二廠廠房建構收尾中待機組設置。\r\n29.114/02/20一廠分水工溢洪道開挖、廠房一樓牆身泥作收尾。二廠水輪機系統細節收尾。\r\n30.114/02/27一廠分水工溢流堰襯底完成，準備大底鋼筋組立。一廠及二廠廠房底座防水塗料施作中。\r\n31.114/03/05一廠區回填完成，分水供溢洪道鋼筋組立中。\r\n32.114/03/13一廠與二廠機電設備進場施工中。\r\n33.114/03/21機電線路及設備安裝中、溢洪道牆身加高植筋拉拔試驗。\r\n34.114/03/31一廠機電設備配線中，及台電外線設置中；二廠台電外線設置中。\r\n35.114/04/10一廠及二廠機電線路建置中，工地整理預計5月初試俥。\r\n36.114/04/30分水工溢洪道施作完成，一廠及二廠機電線路配線中。\r\n37.114/05/08預計5月完成併聯試運轉。\r\n38.114/05/29已經收到併聯試運轉函(後續提供相關函文)。\r\n39.114/06/12已完成併聯(114年5月23日雲林字第1148066884號函及雲林字第1148066903號函)，辦理設備登記中。\r\n40.114/06/27一廠及二廠水輪機組運轉測試及調教中。\r\n41.114/07/08案場收尾工作進行中。\r\n42.114/07/24已取得台電併聯試運轉。\r\n43.114/08/21取得台電併聯試運轉。\r\n44.114/09/03案場道路修復及牆面彩繪。\r\n45.114/11/13案場道路修復及牆面彩繪已完工但尚未取得設備登記。\r\n46.114/11/27辦理設備登記中。\r\n47.114/12/10辦理設備登記中。\r\n48.114/12/22辦理設備登記中。\r\n49.115/01/14已取得設備登記，但尚未收到台塑的公文。\r\n50.115/01/22已取得設備登記。\r\n51.115/01/28已取得設備登記。\r\n52.115/02/04已取得設備登記。\r\n53.115/02/10已取得設備登記。\r\n54.115/02/13已取得設備登記。\r\n55.115/02/25已取得設備登記。\r\n56.115/03/04已取得設備登記。\r\n57.115/06/01已納入月報表。","difficulty":"-","planned_next":"114年5月23日已完成併聯(雲林字第1148066884號函及雲林字第1148066903號函)","note":"原規劃100kW"},{"_idx":12,"_kind":"hydro_tender","serial":"","mgmt":"高雄","county":"高雄市","township":"","land_section":"菜寮段","land_no":"0182-0000、0212-0000、0244-0000、0245-0000、0249-0000、0269-0000","contract_name":"","case_name":"阿公店水庫取出水工暨復興渠(0k+000- 0k+358)","capacity_kw":30,"unit_count":6,"unit_capacity_kw":5,"tender_period":"","sign_date":"","feeder":"X","internal_review":"X","taipower_review":"○\r\n(111/11/28)","water_right":"X","water_structure":"X","soil_conservation":"-","land_permit":"X","electric_setup":"X","consent_filed":"X","briefing":"","construction_permit":"X","estimated_completion":"111年","vendor":"昱光能源股份有限公司","operation":"1.本案場由南區水資源局招商並收取售電回饋金。\r\n2.管理處擬訂之契約書已送南區水資源局，待該局回覆。依南水局與管理處於112年6月30日會議紀錄，南水局對管理處擬訂之契約書有疑慮，擇期再議。\r\n3.使用土地地號(土地為南區水資源局所有)：高雄市岡山區菜寮段182、212、244、245、249、269地號土地。使用範圍：0k+00〜0k+358。\r\n4.開工日期：111/06/29。\r\n5.併聯日期：111/11/28。\r\n6.經費：345萬元。。\r\n7.114/03/11進度：案場停擺中。","difficulty":"","planned_next":"","note":"開工日期：111/06/29\r\n經費：345萬元"},{"_idx":13,"_kind":"hydro_tender","serial":"8","mgmt":"高雄","county":"高雄市","township":"美濃區","land_section":"龍肚段二小段","land_no":"6277-0000、1280-0003","contract_name":"獅子頭圳導水路小水利發電設備建置案","case_name":"獅子頭圳導水路小水利發電設備建置案","capacity_kw":200,"unit_count":null,"unit_capacity_kw":null,"tender_period":"","sign_date":"","feeder":"","internal_review":"","taipower_review":"","water_right":"","water_structure":"","soil_conservation":"","land_permit":"","electric_setup":"","consent_filed":"","briefing":"","construction_permit":"","estimated_completion":"","vendor":"","operation":"1.廠商評估200kW。\r\n2.本案112年12月13日水利小組聯席會議時提出，參酌地方意見，再行辦理。\r\n3.俟長官指示上網公告日期。\r\n4.招標文件已備妥，俟長官指示上網公告日期。 \r\n5.俟113年9月5日召開之小水力履約管理工作會議，相關招標文件修正版確定後，管理處續簽辦招標作業。 \r\n6.俟相關招標文件標準版確定後，管理處續簽辦招標作業。\r\n7.114/06/12招標文件資料整理。\r\n8.114/06/27規劃114年8月辦理招標前地方說明會。\r\n9.原預計8月份辦理招標前地方說明會，因招標文件內容中有關「公益回饋金」如何執行查核尚有疑慮，故暫緩辦理。","difficulty":"","planned_next":"預計9月辦理公開招標(暫緩)","note":""},{"_idx":15,"_kind":"hydro_tender","serial":"","mgmt":"宜蘭","county":"宜蘭縣","township":"冬山鄉","land_section":"柯林一段","land_no":"0082-0000","contract_name":"萬長春圳小水力發電設備建置","case_name":"萬長春圳小水力發電","capacity_kw":252,"unit_count":1,"unit_capacity_kw":252,"tender_period":"","sign_date":"113/01/23","feeder":"○","internal_review":"X","taipower_review":"○","water_right":"○","water_structure":"X","soil_conservation":"-","land_permit":"X","electric_setup":"X","consent_filed":"X","briefing":"X","construction_permit":"X","estimated_completion":"115年07月","vendor":"續律能源股份有限公司","operation":"1.廠商評估252kW。\r\n2.本案已於112/10/27上網公告招標，11/10辦理開標，12/11辦理評選會議。\r\n3.112/12/28 決標，113/01/23辦理公證簽約。\r\n4.113/03/20 召開規劃說明會議報告目前規劃進度，並訂出下次報告時間為113/05/16。\r\n5.113/05/15 取得透地雷達報告，113/06/14前提出正式方案，後續會再進行地植鑽探作業，針對案場建置項目(結構、防震...等項目)確認。113/06/18同意饋線保留(農水宜蘭字第1138122303號函)。\r\n6.113/07/19至113/07/20 廠商進行地質鑽探作業。\r\n7.水權已送件宜蘭縣政府、河川公地待確認用地範圍後送件第一河川分署。113/10/23取得水權(府水行字第1130179201號函)。\r\n8.廠商評估開挖萬長春圳RCP管風險過高，提出其他位置之方案，管理處回覆本案契約限制於柯林一段82地號發展小水力發電，仍請廠商思考是否有其他工法克服現有困境。並於113/12/13召開建置規劃說明會議。\r\n9.113/12/09 台電併聯審查同意辦理(宜蘭字第1138160303號函)。\r\n10.114/01/03 檢送113年12月13日萬長春圳小水力發電設備建置建置規劃說明會議，會議紀錄(114續律字第0101號)。\r\n11.114/02/21 廠商目前重新設計並進行水理分析。\r\n12.114/03/26 下午與廠商討論設計方案，會議中請廠商謹慎考量規劃方案是否影響景觀。\r\n13.114/04/22 廠商發函提出同意備案展延申請(114續律字第0402號)。\r\n14.管理處同意廠商同備期第一次展延申請，展延後期限至114/07/26(農水宜蘭字第1148102107號)。\r\n15.114/06/06 廠商調整流量數據，以建立新的3D模型進行水理分析。\r\n16.114/06/25 廠商提出第二次同意備案展延申請(114續律字第0601號函)，114/06/30管理處同意展延至114/9/23(農水宜蘭字第1148103305號)。\r\n17.114/07/14 廠商進入萬長春圳RCP管目視勘查萬長春圳RCP管結構。\r\n18.114/08/15 會議廠商提出兩種方案，(1)退水回萬長春圳方案僅退水3.多cms，不足下游農田灌溉需水量。(2)全退水回安農溪方案，與原投標方案差異過大。\r\n19.廠商提送0815討論會會議記錄，尚未提出新設計方案。\r\n20.114/09/16 廠商經評估後，仍未能消除管壁結構安全疑慮，且未能於期限內取得同意備案，故提出終止契約(114續律字第0902號)，經114/09/23協商會議達成共識後，雙方同意終止契約，並於114/09/30依農水宜蘭字第1148124893號函辦理，114年12月11日合意終止契約公證，後續辦理退履約保證金作業(已完成退還履約保證金)。","difficulty":"-","planned_next":"","note":"管理處同意展延至114/7/26(農水宜蘭字第1148102107號)。同意第二次展延至114/9/23(農水宜蘭字第1148103305號)\r\n\r\n114/12/11合意辦理終止契約公證，並已完成退還履約保證金相關作業"},{"_idx":16,"_kind":"hydro_tender","serial":"9","mgmt":"花蓮","county":"花蓮縣","township":"玉里鎮","land_section":"鎮宮前段","land_no":"0523-0000","contract_name":"太平渠幹線松浦小水力發電廠","case_name":"太平渠幹線松浦小水力發電廠","capacity_kw":140,"unit_count":1,"unit_capacity_kw":140,"tender_period":"","sign_date":"111/10/27","feeder":"-","internal_review":"○","taipower_review":"○","water_right":"○","water_structure":"○","soil_conservation":"○","land_permit":"Δ","electric_setup":"X","consent_filed":"○","briefing":"○","construction_permit":"X","estimated_completion":"115年12月","vendor":"經一綠能股份有限公司","operation":"1.111/10/27 公證簽約。\r\n2.111/12/12 辦理水權變更申請會勘，112/02/02取得水權狀。廠商於112/02/20提送興建計畫書(經集字第11200220017號函)，廠商函送水土保持計畫書至目的事業主管機關。112/03/01管理處函覆廠商興建計畫書原則同意，並請廠商於辦理現地會勘後，待管理處處同意再行施工(農水花蓮字第1126861390號)。\r\n3.112/07/06 函送簡易水保申請，花蓮縣政府退回廠商提送簡易水保申請，請廠商修正內容後送主管機關函轉農村發展及水土保持署。\r\n4.112/09/14 請經濟部能源局徹銷水土保持申請案件，請廠商以該公司為水土保持義務人重新向花蓮縣政府提出簡易水土保持申請，112/11/10簡易水保申請會勘。113/03/18簡易水保核准。\r\n5.廠商函詢鎮公所是否免雜項執照。\r\n6.管理處於113/02/07函復花蓮縣政府依水利法等相關規定建請准予核辦本案之水利建造物申請。\r\n7.廠商依縣政府函文依農田水利法第12條第一項等相關規定擬向管理處申請兼作使用。\r\n8.113/04/23下午7時召開部落會議前說明會(經玉字第1130410050號函)，說明小水力電廠等事宜(經玉字第1130508065號函)。\r\n9.有關縣政府要求案場申請建築報照案，廠商函文管理處請管理處協助與縣政府召開協調會。 \r\n10.113/06/13 與花蓮縣政府召開協調會，縣府要求本署出具證明，已請廠商發函至管理處，以憑辦理。\r\n11.113/07/05 廠商再次向花蓮縣政府提送水利建造物申請。113/8/21取得花蓮縣政府水利建造物同意備查(府建水字第1130133588號函)。\r\n12.113/09/26 花蓮縣玉里鎮公所代行召集部落會議公告，公告期間自113年9月26日起至113年10月25日止(玉鎮原第1130019337號函)。\r\n13.113/12/26 至花蓮縣政府拜會觀光處處長，期望取得縣政府支持同意。\r\n14.113/12/24 廠商函請玉里鎮公所協助代行召集部落會議(經玉字第1131224167號函)。\r\n15.113/12/27 玉里鎮公所函請瑪谷達璦部落頭目等幹部盡速成立部落會，針對此案提出討論(玉鎮原字第1130027768號函)。\r\n16.花蓮縣政府訂於114/01/10下午2時辦理太平渠松浦小水力發電廠現勘(本案因台電併聯審查意見書需取得地方主管機關支持文件)。依114/01/03會勘通知單備註一說明，案場總裝置容量為144kW，故調整裝置容量訂為140kW(原已完工案場，進行機組更換)。本次更換後，預計裝置容量將由原80kW提升至15 kW(府觀工字第1130264376號)。\r\n17.請廠商先行召開部落會議及地方說明會並取得同意後，花蓮縣政府再依會議結果辦理。\r\n18.廠商依114/02/06經玉字第1140116008號辦理，並於114/02/20召開部落諮商會議及同意票表決，經與會家戶數投票表決結果，同意設置。(玉鎮原字第1140004808號函)。\r\n19.廠商依114/03/11經玉字第1140311029號函，並於114/03/27召開地方說明會，與會民眾同意設置。\r\n20.114/04/29 花蓮縣政府同意廠商向台灣電力股份有限公司申請再生能源發電設備併聯審查(府觀工字第1140068220號)。\r\n21.114/05/28 廠商向花蓮縣政府函送非都市土地容許使用申請相關文件(經玉字第1140528059號函)，向台電申請併聯審查意見書中(1140527台電簽收單)。\r\n22.114/07/21 花蓮縣政府函復非都市土地容許使用初審意見表(府觀工字第1140106754號函)，並請廠商修正資料後送府憑辦。\r\n23.114/07/14取得台電併聯審查意見函(花蓮字第1148091789號函)。\r\n24.114/08/06 廠商送申請非都市土地容許使用申請書修正版等相關資料函請花蓮縣政府審查(經玉字第1140806080號)。\r\n25.廠商於114/09/10向花蓮縣政府申請再生能源發電設備同意備案(經玉字第1140910093號函)，114/10/02 取得花蓮縣政府再生能源發電設備同意備案(府觀工字第1140184876號)。\r\n26.114/11/12縣政府請廠商補件及修正(府觀工字第1140184238號)，廠商土地容許補件中。\r\n27.114/12/18辦理施工說明會(經玉字第1141201124號)。\r\n28.115/1/23縣政府水利科請廠商補正土地容許使用申請資料。\r\n29.115/05/05補正土地容許使用資料，縣政府審核中","difficulty":"-","planned_next":"114/12/18施工說明會","note":"114.01.03會勘通知單備註一，說明總裝置容量144kW，因此修改裝置容量。裝置容量以140標示。\r\n(原已完工案場-更換機組)\r\n*更換機組，預計容量增加至150kW(原80kW)"},{"_idx":18,"_kind":"hydro_tender","serial":"10","mgmt":"花蓮","county":"花蓮縣","township":"瑞穗鄉","land_section":"源南段","land_no":"0027-0001、0027-0002、0027-0003、0027-0004","contract_name":"興泉圳微水力發電設備建置案","case_name":"興泉圳微水力發電設備建置案","capacity_kw":200,"unit_count":2,"unit_capacity_kw":null,"tender_period":"","sign_date":"112/12/8","feeder":"○","internal_review":"○","taipower_review":"X","water_right":"X","water_structure":"X","soil_conservation":"X","land_permit":"X","electric_setup":"X","consent_filed":"X","briefing":"X","construction_permit":"X","estimated_completion":"117年12月","vendor":"霖全能源股份有限公司","operation":"1.案場辦理管變(國產署土地)，管變完成後辦理招標作業。\r\n2.本案已於112/09/27上網公告招標，10/12辦理開標，10/19辦理評選會議。\r\n3.本案已公告決標，112/12/08簽約、契約公證。\r\n4.廠商於113/02/05提送興建計畫書至管理處。\r\n5.113/05/02辦理鑑界行政程序申請。\r\n6.廠商於113/05/27至管理處簡報說明設計圖說。\r\n7.113/07/10 饋線申請。\r\n8.113/09/25 函請花蓮縣政府申請支持文件。\r\n9.廠商電話詢問花蓮縣政府承辦人，土地同意書之函文應由農田水利署出具，113/10/09廠商函文管理處協助取得署本部同意書，113/10/30取得署本部同意書函(農水花字第1138863398號函)。\r\n10.廠商於113/11/26 向管理處申請兼作使用，113/12/18與案地工作站現勘，需補正相關文件。\r\n11.廠商於114/02/07 重新提送兼作使用申請(霖泉-興泉字第1140207001號)。\r\n12.114/02/27複審同意，函請廠商繳納勘查費(農水花字第1148882384號)。\r\n13.廠商勘查費已繳納完畢，114/03/24 管理處核發兼作使用同意書(農水花字第1148897389號函)。\r\n14.114/04/17廠商函詢花蓮縣府申請台電併聯審查意見書是否需取得縣府同意(霖全-興泉字第1140417001號函)。\r\n15.114/04/29 花蓮縣政府函復廠商，需取得縣府同意，並請依諮商取得原住民族部落參與辦法規定詢瑞穗鄉公所確認(府觀工字第1140076263號)。\r\n16.114/5/14 廠商申請台電併聯審查意見書需取得地方主管機關支持文件，目前發函花蓮縣政府取得支持文件中(霖全-興泉字第1140514001號函)。\r\n17.114/06/19 管理處函請廠商依諮商取得原住民族部落參與辦法規定洽詢瑞穗鄉公所確認，並儘速召開部落會議及地方說明會(農水花蓮字第1148897578號)。\r\n18.廠商於114/09/26函詢瑞穗鄉公所案地是否位於原住民族傳統領域範圍內(霖泉-興泉字第1140926001號)，並籌辦部落會議及地方說明會中。。\r\n19.114/10/15目前廠商向管理處申請取得同意備期限案展延一年(霖全-興泉字第1141015001號)；114/11/12管理處同意展延同意備案許可期限，自114年12月8日起至115年12月7日止。\r\n20.115/05/05本次無進度。","difficulty":"","planned_next":"","note":"原規劃70kW"},{"_idx":19,"_kind":"hydro_tender","serial":"","mgmt":"花蓮","county":"花蓮縣","township":"壽豐鄉","land_section":"豐坪段","land_no":"639","contract_name":"","case_name":"溪口排水小水力發電設備","capacity_kw":3,"unit_count":1,"unit_capacity_kw":3,"tender_period":"","sign_date":"","feeder":"","internal_review":"","taipower_review":"","water_right":"","water_structure":"","soil_conservation":"","land_permit":"","electric_setup":"","consent_filed":"","briefing":"","construction_permit":"","estimated_completion":"114年4月","vendor":"花蓮管理處工務組","operation":"1.幹線工程未完工，移排水至溪口排水內，故機組尚無法架設。\r\n2.土建工程設計變更中，待變更後復工即進行機組安裝。\r\n3.預計於114/04/11安裝機組。\r\n4.機組安裝中，尚未安裝完妥。\r\n5.機組完成安裝試運轉，機箱顯示版尚未調校完成。\r\n6.本案已完成案裝及機箱顯示版調校作業。\r\n7.本案114/04/21竣工，114/05/23驗收。","difficulty":"-","planned_next":"","note":"工務組今年提報工程有設計「小水力」機組，常態發動約300W\r\n114年4月21日完工"},{"_idx":20,"_kind":"hydro_tender","serial":"","mgmt":"臺東","county":"臺東縣","township":"卑南鄉","land_section":"利泰段","land_no":"0143-0000、0144-0000、0145-0000、0146-0000、0176-0000、0177-0000、0178-0000、0179-0000、0182-0000、0183-0000、0184-0000、0205-0000","contract_name":"卑南上圳小水力發電設備建置案","case_name":"卑南上圳小水力發電設備建置案","capacity_kw":250,"unit_count":2,"unit_capacity_kw":null,"tender_period":"","sign_date":"113/01/10","feeder":"X","internal_review":"○","taipower_review":"X","water_right":"X","water_structure":"X","soil_conservation":"X","land_permit":"X","electric_setup":"X","consent_filed":"X","briefing":"○","construction_permit":"X","estimated_completion":"已撤案","vendor":"源林工程股份有限公司","operation":"1.本案已於112/10/20上網公告招商，已於11/21辦理開標，於11/28辦理評選會議，源林工程股份有限公司為第一符合需要廠商。\r\n2.已於113/01/10簽約及公證。\r\n3.廠商於113/04/25提送營運計畫書至管理處審查。\r\n4.113/05/31函復營運計劃書及結構計算書同意備查(農水臺東字第1138800939號)。\r\n5.113/09/05、113/09/06辦理相關部落地方說明會。\r\n6.廠商113/10/28函詢卑南鄉公所本案是否須踐行諮商取得原住民族同意程序。\r\n7.113/10/30卑南鄉公所審查案場計畫書有缺漏，已退回補件中。\r\n8.卑南鄉公所認本須踐行諮商取得原住民族同意程序，函請源林工程股份有限公司依法提出申請。\r\n9.113/11/19廠商檢送廠域使用面積清冊。\r\n10.113/11/22廠商函請卑南鄉公所踐行諮商同意程序。\r\n11.113/11/27管理處函覆廠商場域使用面積清冊同意備查與通知113年繳納場域使用費。\r\n12.113/11/28卑南鄉公所函請關係部落於2個月內召集部落會議。\r\n13.廠商113/12/27申請展延「卑南上圳小水力發電設備建置案」取得相關部落同意。\r\n14.廠商於114/01/05晚間邀請關係部落幹部、代表及意見領袖，辦理回饋機制研商會議。\r\n15.廠商於114/01/07函送本案大巴六九部落及利嘉部落諮商同意案研商會議紀錄各1份。\r\n16.114/01/05會議名稱更正為諮商同意案研商會議(詳如附件會議紀錄)，廠商114/01/07函送上開會議紀錄，管理處依其會議結論事項及本案契約書規定於114/01/15函復廠商同意展延本案相關部落取得期限至114/04/30止。(待大巴六九部落部落改選完成再一起開回饋機制會議)\r\n17.114/01/23管理處發函通知廠商繳納114年場域使用費。\r\n18.大巴六九部落部落已於114/01/25完成部落主席選舉，將於近期排程辦理本案諮商同意，另利嘉部落要求廠商針對該部落辦理第2次地方說明會。\r\n19.廠商預定於114/02/14辦理利嘉部落第2場地方說明會(源林字第1140210001號)。\r\n20.114/02/10廠商檢送114年場域使用費現金匯款單(源林字第11402010002號)。\r\n21.114/02/20函復卑南上圳114年場域使用費收據(農水臺東字第1148820699號)。\r\n22.廠商預計於114/03/21召開利嘉部落諮商同意會議(114年2月27日利嘉部會字第1140226009號)\r\n23.廠商預計於114/03/23召開大巴六九部落諮商同意會議(114年3月6日大巴六九部會字1140306002號)。\r\n24.114/03/21辦理利嘉部落諮商同意會議，因原住民代表出席戶數不足法定數量，由協辦機關卑南鄉公所原民課宣告本次會議流會，並決議03/23大巴六九部落諮商同意會議因上述事宜取消辦理。\r\n25.114/04/14因本案取得關係部落同意期限將屆，廠商研議停辦本案。\r\n26.114/05/16廠商未能依約於期限內取得相關部落同意發開行為，業於114年4月30日函請管理處同意終止契約(源林字第1140430001號)，管理處於114/05/09同意廠商終止契約(農水臺東字第1148821778號)。","difficulty":"","planned_next":"","note":"已撤案"},{"_idx":21,"_kind":"hydro_tender","serial":"11","mgmt":"臺東","county":"臺東縣","township":"關山鎮","land_section":"北庄段","land_no":"0112-0000、0254-0000","contract_name":"關山圳(北庄段)小水力發電設備建置案","case_name":"關山圳(北庄段)小水力發電設備建置案","capacity_kw":600,"unit_count":6,"unit_capacity_kw":1.1102110310046051e+22,"tender_period":"","sign_date":"113/04/17","feeder":"○","internal_review":"○","taipower_review":"X","water_right":"○","water_structure":"X","soil_conservation":"X","land_permit":"X","electric_setup":"X","consent_filed":"X","briefing":"Δ","construction_permit":"X","estimated_completion":"116年10月","vendor":"恆水創電股份有限公司","operation":"1.本案已於112/10/20上網公告招商，已於11/21辦理開標，於11/28辦理評選會議。\r\n2.113/03/20決標，辦理契約簽訂事宜。\r\n3.113/04/17辦理公證簽約。\r\n4.113/09/03至113/09/05進行案場流量律定。\r\n5.113/10/30廠商請海瑞鄉公所協助11/08辦理部落會議(113恆水字第1131030001號)，但因為管理處無法派員，故改期至11/15日辦理部落會議(113恆水字第1131104001號)。\r\n6.廠商預定113/11/15辦理部落地方說明會。(因雨延期)。\r\n7.廠商於113/11/13提送營運計畫書至管理處審查。\r\n8.廠商預定113年11月20日辦理德高部落地方說明會(113年恆水字第1131113005號)。\r\n9.113/11/20函請廠商補正營運計畫書資料。\r\n11.廠商於113/12/13上午10時辦理德高部落地方說明會(113年恆水字第1131204003號)，傍晚18時辦理山平部落地方說明會(113年恆水字第1131204001號)。\r\n12.廠商113/12/17補正營運計畫書。\r\n13.114/01/23電話聯繫確認此案因修正意見與關山圳(北庄段)一致。\r\n14.114/01/24管理處函復營運計畫書同意備查(農水臺東字第1138813773號)，並請廠商依約繳納114年場域使用費。\r\n15.114/02/06廠商檢送114年場域使用費匯款單(恆水字第11402060010號)。\r\n16.114/02/18函復114年場域使用費收據(農水臺東字第1148830393號)。\r\n17.114/04/11辦理地方(北庄社區及德高里)回饋金諮商會議。\r\n18.114/04/18申請展延本案取得相關部落同意日期(恆水字第11404180010號)。\r\n19.114/04/19於18時辦理山平部落第2次地方說明會。\r\n20.114/04/25廠商函送山平部落第1、2次(113/12/13及114/04/19)地方說明會會議紀錄(恆水字第11404250010號)。\r\n21.114/05/07廠商為取得相關部落同意展延期程案(恆水字第11404180010號)，管理處同意延期(農水臺東字第1148831225號)至114/07/30止。\r\n22.原訂114/05/17部落諮商會議戶數不足法定出席人數，故會議取消，需改期辦理。\r\n23.廠商114/06/10函請管理處代為申請饋線保留(恆水字第11406100030號函)，管理處於114/06/12函請台電公司協助辦理(農水臺東字第1148831834號函)。\r\n24.廠商於114/06/28山平部落辦理諮商同意會議，第3次部落會議(山平部字號114004號)。並取得山平部落諮商同意。待關山圳北庄段及西莊段俟山平部落諮商同意會議完成後，依回饋方案再與當地德高里北庄及德高2社區商議回饋事宜。\r\n25.114/06/25業經台電公司同意保留(台東字第1141384456號函)，114/07/07饋線保留以1年為限，期限為114/06/25至115/06/24止(農水臺東字第1148832035號函)。\r\n26.114/07/07向臺東縣政府申請地面水水權，114/7/23完成水權會勘(府建水字第1140156813號函)，114/08/18臺東縣政府核發水權狀(府建水字第1140188714號函)。\r\n27.114/07/11第3次部落會議會議114/06/28會議記錄(山部字114年第1140005號)。\r\n28.114/10/03廠商與當地社區簽定回饋金協議。\r\n29.114/10/20管理處通知廠商應提送取得能源主管機關發電籌設許可文件(農水臺東字第1148841370號函)。\r\n30.114/11/11廠商函復案場辦理現況及申請預計進度(恆水字第11411110010號)並於114/11/12更正前函主旨及說明內容(恆水字第11411120010號。\r\n31.114/11/17管理處函復案場辦理現況及申請預計進度業予備查(農水臺東字第1148833715號函)，近期辦理台電併聯審查中。\r\n32.115/01/06管理處通知廠商依約繳納115年場域使用費(農水臺東字第1158840005號函)。\r\n33.115/05/05近期辦理台電申請併聯審查及申請非都市土地容許使用。\r\n34.115/05/11廠商函請非都市土地容許使用申請文件用印(恆水字第1150510010號函)。\r\n35.115/05/22管理處函復用印後申請文件(農水臺東字第1158821849號函)。","difficulty":"-","planned_next":"","note":""},{"_idx":22,"_kind":"hydro_tender","serial":"12","mgmt":"臺東","county":"臺東縣","township":"關山鎮","land_section":"北庄段","land_no":"0815-0000","contract_name":"關山圳(西莊段)小水力發電設備建置案","case_name":"關山圳(西莊段)小水力發電設備建置案","capacity_kw":415,"unit_count":4,"unit_capacity_kw":11302110390485,"tender_period":"","sign_date":"113/04/17","feeder":"○","internal_review":"○","taipower_review":"X","water_right":"○","water_structure":"X","soil_conservation":"X","land_permit":"X","electric_setup":"X","consent_filed":"X","briefing":"Δ","construction_permit":"X","estimated_completion":"116年10月","vendor":"恆水創電股份有限公司","operation":"1.本案已於112/10/20上網公告招商，已於11/21辦理開標，於11/28辦理評選會議。\r\n2.113/03/20決標，辦理契約簽訂事宜。\r\n3.113/04/17辦理公證簽約。\r\n4.113/09/03至113/09/05進行案場流量律定。\r\n5.113/10/30廠商請海瑞鄉公所協助11/08辦理部落會議(113恆水字第1131030001號)，但因為管理處無法派員，故改期至11/15日辦理部落會議(113恆水字第1131104001號)。\r\n6.廠商預定113/11/15辦理部落地方說明會。(因雨延期)\r\n7.廠商於113/11/13提送營運計畫書至管理處審查。\r\n8.廠商預定113年11月20日辦理德高部落地方說明會(113年恆水字第1131113005號)。\r\n9.113/11/20函請廠商補正營運計畫書資料。\r\n11.廠商於113/12/13上午10時辦理德高部落地方說明會(113年恆水字第1131204003號)，傍晚18時辦理山平部落地方說明會(113年恆水字第1131204001號)。\r\n12.廠商113/12/17補正營運計畫書。\r\n13.114/01/23電話聯繫確認此案因修正意見與關山圳(北庄段)一致。\r\n14.114/01/24管理處函復營運計畫書同意備查(農水臺東字第1138813773號)，並請廠商依約繳納114年場域使用費。\r\n15.114/02/06廠商檢送114年場域使用費匯款單(恆水字第11402060010號)。\r\n16.114/02/18函復114年場域使用費收據(農水臺東字第1148830393號)。\r\n17.114/04/11辦理地方(北庄社區及德高里)回饋金諮商會議。\r\n18.114/04/18申請展延本案取得相關部落同意日期(恆水字第11404180010號)。\r\n19.114/04/19於18時辦理山平部落第2次地方說明會。\r\n20.114/04/25廠商函送山平部落第1、2次(113/12/13及114/04/19)地方說明會會議紀錄(恆水字第11404250010號)。\r\n21.114/05/07廠商為取得相關部落同意展延期程案(恆水字第11404180010號)，管理處同意延期(農水臺東字第1148831225號)至114/07/30止。\r\n22.原訂114/05/17部落諮商會議戶數不足法定出席人數，故會議取消，需改期辦理。\r\n23.廠商114/06/10函請管理處代為申請饋線保留(恆水字第11406100030號函)，管理處於114/06/12函請台電公司協助辦理(農水臺東字第1148831834號函)。\r\n24.廠商於114/06/28山平部落辦理諮商同意會議，第3次部落會議(山平部字號114004號)。並取得山平部落諮商同意。待關山圳北庄段及西莊段俟山平部落諮商同意會議完成後，依回饋方案再與當地德高里北庄及德高2社區商議回饋事宜。\r\n25.114/06/25業經台電公司同意保留(台東字第1141384456號函)，114/07/07饋線保留以1年為限，期限為114/06/25至115/06/24止(農水臺東字第1148832035號函)。\r\n26.114/07/07向臺東縣政府申請地面水水權，114/7/23完成水權會勘(府建水字第1140156813號函)，114/08/18臺東縣政府核發水權狀(府建水字第1140188714號函)。\r\n27.114/07/11第3次部落會議會議114/06/28會議記錄(山部字114年第1140005號)。\r\n28.114/10/03廠商與當地社區簽定回饋金協議。\r\n29.114/10/20管理處通知廠商應提送取得能源主管機關發電籌設許可文件(農水臺東字第1148841370號函)。\r\n30.114/11/11廠商函復案場辦理現況及申請預計進度(恆水字第11411110010號)並於114/11/12更正前函主旨及說明內容(恆水字第11411120010號。\r\n31.114/11/17管理處函復案場辦理現況及申請預計進度業予備查(農水臺東字第1148833715號函)，近期辦理台電併聯審查中。\r\n32.115/01/06管理處通知廠商依約繳納115年場域使用費(農水臺東字第1158840005號函)。\r\n33.115/05/05近期辦理台電申請併聯審查及申請非都市土地容許使用。\r\n34.115/05/11廠商函請非都市土地容許使用申請文件用印(恆水字第1150510020號函)。\r\n35.115/05/22管理處函復用印後申請文件(農水臺東字第1158821850號函)。","difficulty":"-","planned_next":"","note":"114年6月28日山平部落諮商同意會議(山平部字號114004號)"}],"hydro_test":[{"_idx":3,"_kind":"hydro_test","serial":"","mgmt":"石門","county":"桃園市","township":"","land_section":"北商段","land_no":"0572-0000","channel_name":"中壢支渠(北商段572地號)微水力發電站","capacity_kw":5,"pile_no":"","unit_count":1,"unit_capacity_kw":null,"test_apply_from":"111/11/15","test_apply_to":"112/11/15","sign_date":"-","internal_review":"","actual_test_date":"112年11月15日","vendor":"水律能源股份有限公司","operation":"1.測試案場(未併網售電)阿基米德水輪機\r\n2.在112年6月份完成裝機運轉\r\n3.申請測試期限已屆滿，廠商無續約意願，機組已拆除","planned_next":"","note":""},{"_idx":4,"_kind":"hydro_test","serial":"","mgmt":"臺中","county":"臺中市","township":"新社區","land_section":"水底寮段上水底寮小段","land_no":"0152-0026","channel_name":"白冷圳水底寮支線小水力發電試驗場所","capacity_kw":1,"pile_no":"","unit_count":1,"unit_capacity_kw":1,"test_apply_from":"110/11/04","test_apply_to":"111/11/15","sign_date":"110/11/16","internal_review":"","actual_test_date":"","vendor":"阿丹馬克川流綠電股份有限公司","operation":"1.原測試期限110/11/04至111/11/15止，管理處管理組核准阿丹馬克公司機組測試，展延期限自112/07/12~114/07/11止\r\n2.尚進行測試中，因部分零件待租用，擔心原機組受損，僅先拆除部分重要零件保存，後續將再施工並繼續進行測試\r\n3.114/08/18機組已拆除，廠商預計重新送申請文件","planned_next":"","note":""},{"_idx":5,"_kind":"hydro_test","serial":"","mgmt":"臺中","county":"臺中市","township":"","land_section":"后科段","land_no":"0524-0000","channel_name":"后里圳(后里區后科段524地號)","capacity_kw":1,"pile_no":"","unit_count":1,"unit_capacity_kw":1,"test_apply_from":"-","test_apply_to":"-","sign_date":"-","internal_review":"","actual_test_date":"113年","vendor":"阿丹馬克川流綠電股份有限公司","operation":"管理處管理組約於111年8.9月間審核后，退回給廠商修正相關文件，迄今尚未補正文件重送管理處","planned_next":"","note":""},{"_idx":6,"_kind":"hydro_test","serial":"","mgmt":"彰化","county":"彰化縣","township":"","land_section":"下水埔段","land_no":"0673-0000","channel_name":"莿仔埤圳微水力發電機組測試案","capacity_kw":10,"pile_no":"","unit_count":1,"unit_capacity_kw":null,"test_apply_from":"111/06","test_apply_to":"111/09","sign_date":"-","internal_review":"","actual_test_date":"111年","vendor":"崑山科大綠能科技研究中心","operation":"1. 111/5/11辦理審查會\r\n2. 111年8月底下水測試(展延)\r\n3. 111/9/5下水測試(已拆除)","planned_next":"","note":""},{"_idx":7,"_kind":"hydro_test","serial":"","mgmt":"彰化","county":"彰化縣","township":"","land_section":"吳厝段","land_no":"0114-0005","channel_name":"同源圳1K+430","capacity_kw":0.8,"pile_no":"","unit_count":1,"unit_capacity_kw":null,"test_apply_from":"112/05","test_apply_to":"113/12","sign_date":"-","internal_review":"","actual_test_date":"測試至113年","vendor":"農業部農業試驗所","operation":"1.112/05/01農試所提送農業區水圳微水力發電經營模式效益評估測試計畫書\r\n2.112/5/24 測試計畫書審查會議，同意測試案場\r\n3.112/8/24 安裝流量計\r\n4.農業部農業試驗所(1121018農試工字第1122149858號農業部農業試驗所來文因試驗延續性考量，取消「同源圳1K+430m處微水力發電測試案場」)","planned_next":"","note":""},{"_idx":8,"_kind":"hydro_test","serial":"","mgmt":"南投","county":"南投縣","township":"","land_section":"福興段","land_no":"0022-0000、0022-0001、0022-0002、0099-0000","channel_name":"能高大圳東幹線 0k+000~0k+120 小水力發電設備建置","capacity_kw":490,"pile_no":"","unit_count":1,"unit_capacity_kw":490,"test_apply_from":"110/08/19","test_apply_to":"111/08/18","sign_date":"112/03/22","internal_review":"","actual_test_date":"111/8/18","vendor":"霖全能源股份有限公司","operation":"測試完畢已招商","planned_next":"","note":""},{"_idx":9,"_kind":"hydro_test","serial":"1","mgmt":"南投","county":"台中市","township":"霧峰區","land_section":"豐正段","land_no":"1101-0000","channel_name":"阿罩霧第一圳導水路幹線(迪暘)","capacity_kw":20,"pile_no":"0K+790","unit_count":1,"unit_capacity_kw":20,"test_apply_from":"114/01/17","test_apply_to":"115/01/16","sign_date":"114/01/21","internal_review":"113/11/01 申請書送達\r\n113/11/20 補正申請書\r\n113/12/26 審查完畢\r\n114/01/20 核發核准函\r\n114/02/20 農水設施兼作其他使用申請開工報告書送達\r\n114/02/21 管理處核發收訖函","actual_test_date":"","vendor":"迪暘有限公司","operation":"1.113/09/20廠商申請兼作使用\r\n2.113/11/01 申請書送達管理處\r\n3.113/11/04 送達工作站審查中\r\n4.113/11/20 申請書遺漏補正中\r\n5.113/11/22 管理處審查中\r\n6.113/12/04 函詢高公局，因該筆土地為高公局所屬\r\n7.113/12/16 高公局函復同意所請(中投字第1130049540號)\r\n8.113/12/26管理處審查完畢(農水投字第1138505751號)，114/01/07廠商繳費\r\n9.114/01/20 管理處核發核准函(農水投字第1148505051號)\r\n10.114/02/06 待廠商提交農水設施兼作其他使用申請開工報告書中，目前尚未施工\r\n11.114/02/20 農水設施兼作其他使用申請開工報告書送達管理處(收訖函呈判中，待下週回報提供)\r\n12.114/02/21 管理處核發收訖函(農水投字第1148505142號)，請廠商依許可事項確實施工\r\n13.114/08/05展延文件準備申請中\r\n12.114/08/18 廠商預計向管理處申請農田水利設施兼作其他使用展延\r\n13.114/09/24 管理處核發核准函(農水投字第114850638號)，展延期限為114/07/17至115/01/16\r\n14.目前機組調整中，暫時拆除。","planned_next":"","note":""},{"_idx":10,"_kind":"hydro_test","serial":"","mgmt":"南投","county":"台中市","township":"霧峰區","land_section":"豐正段","land_no":"1162","channel_name":"阿罩霧第一圳導水路幹線(明玉)","capacity_kw":50,"pile_no":"0K+835","unit_count":1,"unit_capacity_kw":50,"test_apply_from":"114/05/12","test_apply_to":"114/10/11","sign_date":"","internal_review":"114/4/30兼作使用申請書管理處審查完成114/5/27 農水設施兼作其他使用申請開工報告書送達管理處\r\n114/5/29開工測試許可函","actual_test_date":"114年10月02日","vendor":"明玉綠能股份有限公司","operation":"1.114/03/11 申請書送達管理處\r\n2.114/03/12 送達工作站審查中\r\n3.114/03/20 達管理處審查中\r\n4.114/04/15 函請高公局同意使用，因該筆土地為高公局經管(農水南投字第1148505493號)\r\n5.114/04/22 高公局函復同意所請(中投字第1140011580號)\r\n6.114/04/30 管理處審查完成並函復廠商(農水投字第1148505594號)\r\n7.114/05/02 廠商完成繳納規費及保證金\r\n8.114/05/14 核發核准函(114年5月14日農水投字第1148505712號)\r\n9.114/05/27 農水設施兼作其他使用申請開工報告書送達管理處，訂於114/5/29開工測試許可函(農水投字第1148505805號)\r\n10.114/5/29 管理處核發收訖函，請廠商依許可事項切實施工(114年5月29日農水投字第1148505805號)\r\n11.114/5/29 開工安裝機組進行測試中\r\n12.114/08/04 明玉綠能股份有限公司函請辦理阿罩霧第一圳導水路幹線小水力發電公開招標作業(114年8月28日明綠字第1140804號函)\r\n13.114/08/29 農業部農田水利署及農工中心至管理處阿罩霧第一圳導水路幹線現場勘查\r\n14.114/09/12管理處函請協助此案招標案評估(農水南投字第1148506350號函)\r\n15.114/10/02 廠商提交完工報告書。\r\n16.114/10/09 管理處函發查驗完成公文(農水投字第1148506457號)。\r\n17.114/11/07 機組已拆除。\r\n18.114/11/11 廠商向管理處申請退還保證金作業中。\r\n19.114/11/12 管理處退還保證金(114年11月12日農水南投字第1148506582號)。","planned_next":"","note":""},{"_idx":11,"_kind":"hydro_test","serial":"","mgmt":"南投","county":"南投縣","township":"草屯鎮","land_section":"新永安段","land_no":"172-0000、654-0000","channel_name":"北投新圳幹線","capacity_kw":null,"pile_no":"","unit_count":null,"unit_capacity_kw":null,"test_apply_from":"","test_apply_to":"","sign_date":"","internal_review":"","actual_test_date":"","vendor":"源灃電力工業股份有限公司","operation":"1.113/11/22 申請書送達管理處\r\n2.113/11/27 申請書遺漏補正中\r\n3.113/11/28 送至工作站審查中\r\n4.113/11/29 送達管理處審查中\r\n5.113/12/06 經管理處審查，考量該地點每逢強降雨漂流物眾多，且退水時間不 易掌控，恐造成上下游災害，管理處礙難同意所請\r\n6.113/12/13 函復申請人礙難同意所請","planned_next":"","note":""},{"_idx":12,"_kind":"hydro_test","serial":"","mgmt":"南投","county":"南投縣","township":"草屯鎮","land_section":"大崛段","land_no":"0012-0001","channel_name":"新茄荖圳","capacity_kw":50,"pile_no":"1K+356","unit_count":1,"unit_capacity_kw":50,"test_apply_from":"113/09/16","test_apply_to":"113/09/20","sign_date":"","internal_review":"1.113/07/15兼作使用申請書\r\n2.113/07/29補件資料及修正內容\r\n3.113/08/02補件資料及修正設計書與計劃書\r\n4.113/08/19審查完畢","actual_test_date":"113/09/16","vendor":"源灃電力工業股份有限公司","operation":"1.113/07/15提交兼作使用申請書(預計測試期間9/16-9/20)\r\n2.113/07/29至管理處補件資料及修正內容\r\n3.113/08/02至工作站補件資料及修正設計書與計劃書\r\n4.113/08/08工作站初審完畢\r\n5.113/08/12送達管理處\r\n6.113/08/19管理處審查完畢,待廠商繳費\r\n7.113/08/27完成繳費核發核准函\r\n8.113/08/28核定開工報告書(訂於9/16開工)\r\n9.113/09/16開始進行測試並於當日結束回復現狀\r\n10.113/09/25該公司提交完工報告書，管理處確認後同意備查","planned_next":"","note":""},{"_idx":13,"_kind":"hydro_test","serial":"2","mgmt":"嘉南","county":"嘉義縣","township":"竹崎鄉","land_section":"番子潭段","land_no":"391-1","channel_name":"中興圳幹線跌水工","capacity_kw":0.5,"pile_no":"1+900","unit_count":1,"unit_capacity_kw":0.5,"test_apply_from":"114/12/05","test_apply_to":"115/01/29","sign_date":"-","internal_review":"","actual_test_date":"","vendor":"山立能源科技有限公司","operation":"1.114/03/12綠推會議中回覆，剛收到廠商申請，將待管理處內部審查完成後再提報\r\n2.管理處已函請廠商修正計畫書及準備簡報，截至114/07/24廠商尚未提供\r\n3.1140923召開測試案施工說明會，管理處請山立能源科技有限公司針對本次各單位及與會人員提出意見作修正，114/11/20廠商函送修改後施工計畫書至管理處備查(011411水0010號)\r\n4.114/11/26管理處同意施工(農水嘉南字第1148664995號)，測試期間自114/12/05起至115/01/29止","planned_next":"","note":""},{"_idx":14,"_kind":"hydro_test","serial":"3","mgmt":"花蓮","county":"花蓮縣","township":"吉安鄉","land_section":"南華段","land_no":"0516-0000","channel_name":"吉安圳1幹線2支線2分線南華分線微水力發電站","capacity_kw":1.5,"pile_no":"0K+020","unit_count":2,"unit_capacity_kw":1.5,"test_apply_from":"109/09/22","test_apply_to":"114/12/31","sign_date":"-","internal_review":"","actual_test_date":"","vendor":"福慧農場","operation":"1.福慧農場承租(109/03/30~111/03/29)，自用不躉售(尚未訂約，請該電廠4月27日至本會說明計畫案，後續請該電廠提出規畫設計圖說及計劃書)\r\n2.109/08/04福慧農場辦理水利建造物申請事宜，尚未繳費，待繳費完成即可發函同意施工\r\n3.109/09/16施工中，預計9月底可完工\r\n4.109/09/24已完工發電自用，目前持續調整測試中，已核發福慧農場水利建造物同意函(期限1年109/09/22~110/09/21)\r\n5.110/11/08已送件展延，申請展延2年4個月，核准展延至112/12/31(110/09/22-112/12/01)\r\n6.112/11/23已送件展延，申請展延1年，核准展延至113/12/31(113/01/01-113/12/31)\r\n7.114/02/06管理處函文通知重新申請或於期限內拆除機組\r\n8.114/03/05進度：廠商近期將重新申請展延\r\n9.114/03/20進度：廠商展延申請文件準備中\r\n10.114/03/27進度：廠商於114/03/01申請展延，管理處於114/03/25同意該農場展延案核准展延至134/03/20農水花蓮字第1148897391號函\r\n11.114/04/10：114年4月7日農水花蓮字第1148897411號函文更正展延案，核准展延自114/01/01起至114/12/31止計1年\r\n12.115/1/23已通知申請人重新申請展延。","planned_next":"","note":"臺電東部發電廠協助福慧農場設置"},{"_idx":15,"_kind":"hydro_test","serial":"4","mgmt":"花蓮","county":"花蓮縣","township":"吉安鄉","land_section":"南華段","land_no":"0514-0000","channel_name":"吉安圳1幹線2支線1K+471微水力發電站","capacity_kw":3.7,"pile_no":"1K+471","unit_count":1,"unit_capacity_kw":3.7,"test_apply_from":"112/09/01","test_apply_to":"115/08/31","sign_date":"-","internal_review":"","actual_test_date":"","vendor":"廣太綠能股份有限公司","operation":"1.測試案，期限自112/09/01~113/08/31止\r\n2.已申請展延自113/09/01~114/08/31止(已核准)\r\n3.114/09/22申請展延自114/09/01~115/08/31止(農水花蓮字第1148884499號函)","planned_next":"","note":""},{"_idx":16,"_kind":"hydro_test","serial":"5","mgmt":"花蓮","county":"花蓮縣","township":"吉安鄉","land_section":"華興段","land_no":"0902-0000","channel_name":"吉安圳1幹線2支線(初英山)","capacity_kw":0.1,"pile_no":"0K+533","unit_count":1,"unit_capacity_kw":0.1,"test_apply_from":"113/12/09","test_apply_to":"115/11/08","sign_date":"","internal_review":"","actual_test_date":"","vendor":"初英山文化產業交流協會","operation":"1.測試案，期限自113/09/22止\r\n2.113/09/23已發文因有影響居民疑慮，不同意申請展延\r\n3.113/11/07小水力發電討論會議結論:請該協會近期重新申請兼作使用\r\n4.113/12/12書函轉工作站初審是否影響灌排管理\r\n5.113/12/24管理處函文同意使用至114年5月8日止\r\n6.114/05/15 請協會重新函送展延申請\r\n7.114/05/25 同意協會展延申請期限至114年11月8日(114/05/25農水花蓮字第1148883255號函)\r\n8.114/11/17 請協會重新函送展延申請，114/12/15協會送展延公文至管理處(3.114/12/15協會重新函送展延申請至管理處，預計展延至115/11/08(花初字第114121501號)，目前管理處審核中。\r\n9.115/1/26同意協會展延申請使用至115年11月8日止(114/12/19農水花蓮字1148885630號函)","planned_next":"","note":""},{"_idx":17,"_kind":"hydro_test","serial":"6","mgmt":"花蓮","county":"花蓮縣","township":"吉安鄉","land_section":"華興段","land_no":"0902-0000","channel_name":"吉安圳1幹線2支線(臺大)","capacity_kw":0.03,"pile_no":"0K+510","unit_count":1,"unit_capacity_kw":0.03,"test_apply_from":"113/12/08","test_apply_to":"114/12/31","sign_date":"","internal_review":"","actual_test_date":"","vendor":"國立台灣大學","operation":"1.113/11/28至管理處申請兼作使用，期限至113/12/31止\r\n2.113/12/04書函轉工作站初審是否影響灌排管理\r\n3.113/12/23管理處函文同意試驗期間至113/12/31止，並請該校安排拆除機組\r\n4.114/01/09向管理處重新申請兼作使用\r\n5.114/02/03管理處函文同意使用自114/01/15至114/12/31止(農水花蓮字第1148882217號)\r\n6.115/1/26同意展延申請使用至115/12/31止(115/1/15農水花蓮字第1158882458號函)","planned_next":"","note":""},{"_idx":18,"_kind":"hydro_test","serial":"","mgmt":"花蓮","county":"花蓮縣","township":"玉里鎮","land_section":"春日段","land_no":"2487-0000","channel_name":"玉東圳4支線","capacity_kw":0.75,"pile_no":"","unit_count":1,"unit_capacity_kw":0.75,"test_apply_from":"113/9/20","test_apply_to":"113/11/15","sign_date":"-","internal_review":"","actual_test_date":"113/11/8","vendor":"農業部農業試驗所","operation":"1.測試案，期限自113/9/20~113/11/15止\r\n2.測試期限於113/11/15到期，廠商無續約意願，近期安排拆除機組。\r\n3.廠商已於113/11/8將機組拆除。","planned_next":"","note":""},{"_idx":19,"_kind":"hydro_test","serial":"7","mgmt":"花蓮","county":"花蓮縣","township":"吉安鄉","land_section":"初音段","land_no":"0795-0000","channel_name":"吉安圳2幹線","capacity_kw":3,"pile_no":"0+466","unit_count":1,"unit_capacity_kw":3,"test_apply_from":"114/05/01","test_apply_to":"115/04/30","sign_date":"","internal_review":"","actual_test_date":"","vendor":"張恭合","operation":"1.114/04/02向管理處提出兼作使用申請，114/04/23 請申請人繳納規費(農水花字第1148882826號)\r\n2.114/05/16核發兼作使用同意許可函(114/05/12農水花字第1148883146號函)\r\n3.114/12/16目前尚在施工中\r\n4.廠商目前正辦理展延中。","planned_next":"","note":""},{"_idx":20,"_kind":"hydro_test","serial":"","mgmt":"臺中","county":"台中市","township":"","land_section":"","land_no":"","channel_name":"葫蘆墩圳(暫定)","capacity_kw":null,"pile_no":"","unit_count":null,"unit_capacity_kw":null,"test_apply_from":"","test_apply_to":"","sign_date":"","internal_review":"","actual_test_date":"","vendor":"永盛綠能股份有限公司","operation":"尚未收到申請相關文件","planned_next":"","note":""},{"_idx":21,"_kind":"hydro_test","serial":"8","mgmt":"臺中","county":"臺中市","township":"新社區","land_section":"水底寮段上水底寮小段","land_no":"0152-0026","channel_name":"白冷圳水底寮支線小水力發電試驗場所","capacity_kw":null,"pile_no":"","unit_count":1,"unit_capacity_kw":1,"test_apply_from":"114/09/01","test_apply_to":"116/08/31","sign_date":"","internal_review":"","actual_test_date":"","vendor":"張茂崑","operation":"1.原為阿丹馬克股份有限公司申請測試，後由公司負責人張茂崑申請測試，並於114/08/15日向管理處提交農田水利設施兼作其他使用申請書，114\r\n/10/23日提交繳費收據影。\r\n2.114/11/14管理處核發核准函(農水中字第1148458472號)，測試期間為114/09/01至116/08/31止(案場狀態確認中)。\r\n3.115/05/27本次無新進度。","planned_next":"","note":""}],"hydro_potential":[{"_idx":3,"_kind":"hydro_potential","serial":"","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"育仁段","land_no":"0543-0000","channel_name":"桃園大圳10-19號池","pile_no":"","estimated_capacity_kw":29.4,"note":"於114年7月14日簡報中所提之潛力場址，因水流穩定性與投資報酬率偏低，尚難具推動潛力。","progress":"對內，尚需評估","version_type":""},{"_idx":4,"_kind":"hydro_potential","serial":"","mgmt":"桃園","county":"桃園市","township":"大園區","land_section":"竹圍段","land_no":"(0076)2-82","channel_name":"坑子口圳渠首工","pile_no":"","estimated_capacity_kw":200,"note":"於114年7月14日簡報中所提之潛力場址，經進一步查證，該地點屬於桃園航空城特定區計畫範圍內都市計畫區的河川區（兼供捷運系統使用），相關使用與權屬情形如下：\r\n土地管理機關：國有財產署\r\n河川主管機關：坑子口圳由農田水利署管理，南崁溪則由桃園市政府水務局負責\r\n土地狀況：目前為區段徵收範圍內土地，惟尚未完成徵收作業，\r\n未來如有意辦理設置（如申請建照），將涉及多重機關審查。\r\n由於涉及都市計畫、水利設施、捷運預留空間及公產使用，整體行政程序相對繁雜且審查時程較長且工程也較繁瑣，故後續推動之可行性需評估。","progress":"對內，尚需評估","version_type":""},{"_idx":5,"_kind":"hydro_potential","serial":"1","mgmt":"石門","county":"桃園市","township":"楊梅區","land_section":"上湖段","land_no":"1056-0000","channel_name":"和興分渠","pile_no":"0k+41","estimated_capacity_kw":null,"note":"於114年7月14日提供之潛力場址。","progress":"對內，尚需評估","version_type":""},{"_idx":6,"_kind":"hydro_potential","serial":"2","mgmt":"彰化","county":"彰化縣","township":"二水鄉","land_section":"八堡圳段","land_no":"0821-0000","channel_name":"八堡圳幹線跌水工","pile_no":"0K+380","estimated_capacity_kw":90,"note":"與太陽能光電廠商協商開發地點辦理後續招商事宜\r\n經比對座標位置，樁號修正\r\n(114/01/21回覆)\r\n1. 鄰近土地多為私有地，土地取得相對困難，因此僅適合採用槽式機組設計。  \r\n2. 由於鄰近民宅且渠道兼具山洪排水功能，需進行進一步評估。","progress":"對外","version_type":""},{"_idx":7,"_kind":"hydro_potential","serial":"3","mgmt":"彰化","county":"彰化縣","township":"二水鄉","land_section":"八堡圳段","land_no":"0821-0000","channel_name":"八堡圳幹線跌水工","pile_no":"1K+265","estimated_capacity_kw":90,"note":"與太陽能光電廠商協商開發地點辦理後續招商事宜\r\n(114/01/21回覆)\r\n1. 鄰近土地多為私有地，土地取得相對困難，因此僅適合採用槽式機組設計。  \r\n2. 由於鄰近民宅且渠道兼具山洪排水功能，需進行進一步評估。","progress":"對外","version_type":""},{"_idx":8,"_kind":"hydro_potential","serial":"","mgmt":"彰化","county":"彰化縣","township":"二水鄉","land_section":"新十五段","land_no":"0001-0000","channel_name":"八堡一圳幹線","pile_no":"6K+314","estimated_capacity_kw":null,"note":"與太陽能光電廠商協商開發地點辦理後續招商事宜\r\n(114/01/21回覆)\r\n因渠道兼具山洪排水功能，為避免影響排水功能，適用離槽式機組設計，仍需進一步評估。\r\n114/3/12回覆：因縣府已在此處進行景觀步道相關規劃，故評估後不適合設置。","progress":"對外","version_type":""},{"_idx":9,"_kind":"hydro_potential","serial":"","mgmt":"彰化","county":"彰化縣","township":"溪州鄉","land_section":"","land_no":"","channel_name":"莿仔埤圳幹線跌水工","pile_no":"0K+539.7","estimated_capacity_kw":10,"note":"因地點位於社區旁，故改往下游1K+147處(即目前申設中案場)招商","progress":"","version_type":""},{"_idx":10,"_kind":"hydro_potential","serial":"4","mgmt":"南投","county":"南投縣","township":"埔里鎮","land_section":"","land_no":"","channel_name":"南烘圳幹線(思源居宿後方)","pile_no":"0K+785","estimated_capacity_kw":null,"note":"113/06/14管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":11,"_kind":"hydro_potential","serial":"5","mgmt":"南投","county":"南投縣","township":"埔里鎮","land_section":"","land_no":"","channel_name":"南烘圳幹線(鳳雛公園)","pile_no":"1K+458","estimated_capacity_kw":null,"note":"113/06/14管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":12,"_kind":"hydro_potential","serial":"","mgmt":"南投","county":"南投縣","township":"草屯鎮","land_section":"","land_no":"","channel_name":"茄老媽助圳","pile_no":"1K+250","estimated_capacity_kw":null,"note":"113/6/14管理處提供潛力地點\r\n113/9/19經評估後，因坡度小，流速平緩無足夠條件，評估後不適合設置。","progress":"對內，尚需評估","version_type":""},{"_idx":13,"_kind":"hydro_potential","serial":"","mgmt":"南投","county":"南投縣","township":"埔里鎮","land_section":"","land_no":"","channel_name":"九芎林圳北烘支線","pile_no":"0K+870","estimated_capacity_kw":null,"note":"台一生態休閒農場","progress":"對內，尚需評估","version_type":""},{"_idx":14,"_kind":"hydro_potential","serial":"","mgmt":"南投","county":"南投縣","township":"草屯鎮","land_section":"","land_no":"","channel_name":"北投新圳9號埤幹線","pile_no":"","estimated_capacity_kw":null,"note":"用地問題難解，暫不列入","progress":"對內，尚需評估","version_type":""},{"_idx":15,"_kind":"hydro_potential","serial":"","mgmt":"南投","county":"台中市","township":"霧峰區","land_section":"","land_no":"","channel_name":"阿罩霧第一圳導水路幹線(迪暘)","pile_no":"0K+790","estimated_capacity_kw":null,"note":"移至測試案","progress":"對外","version_type":""},{"_idx":16,"_kind":"hydro_potential","serial":"","mgmt":"南投","county":"彰化縣","township":"芬園鄉","land_section":"嘉興段","land_no":"0513-0001","channel_name":"新茄荖圳新茄荖圳微水力發電機組","pile_no":"","estimated_capacity_kw":20,"note":"6/4測試完畢已拆","progress":"對外","version_type":""},{"_idx":17,"_kind":"hydro_potential","serial":"","mgmt":"南投","county":"南投縣","township":"草屯鎮","land_section":"大崛段","land_no":"0012-0001","channel_name":"新茄荖圳","pile_no":"1K+356","estimated_capacity_kw":50,"note":"廠商提出測試申請，移至測試案","progress":"對外","version_type":""},{"_idx":18,"_kind":"hydro_potential","serial":"6","mgmt":"嘉南","county":"臺南市","township":"官田","land_section":"官中","land_no":"522、522-1、\r\n522-2、523、\r\n524-2","channel_name":"南幹線","pile_no":"2K+300","estimated_capacity_kw":30,"note":"114/02/21管理處提供潛力地點，目前無饋線容量","progress":"對內，尚需評估","version_type":""},{"_idx":19,"_kind":"hydro_potential","serial":"7","mgmt":"高雄","county":"高雄","township":"美濃區","land_section":"龜山段","land_no":"0980-0000","channel_name":"獅子頭圳一幹線跌水工","pile_no":"0K+445.9","estimated_capacity_kw":5,"note":"113/08/12管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":20,"_kind":"hydro_potential","serial":"8","mgmt":"高雄","county":"高雄","township":"美濃區","land_section":"龜山段","land_no":"0980-0000","channel_name":"獅子頭圳一幹線跌水工","pile_no":"1K+263.71","estimated_capacity_kw":5,"note":"113/08/12管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":21,"_kind":"hydro_potential","serial":"9","mgmt":"高雄","county":"高雄","township":"美濃區","land_section":"吉東段","land_no":"2025-0000","channel_name":"獅子頭圳一幹線三支線1號制水門跌水工","pile_no":"1K+18.19","estimated_capacity_kw":2,"note":"113/08/12管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":22,"_kind":"hydro_potential","serial":"10","mgmt":"高雄","county":"高雄","township":"美濃區","land_section":"吉東段","land_no":"2025-0000","channel_name":"獅子頭圳一幹線三支線2號制水門跌水工","pile_no":"1K+295","estimated_capacity_kw":2,"note":"113/08/12管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":23,"_kind":"hydro_potential","serial":"","mgmt":"宜蘭","county":"宜蘭縣","township":"三星鄉","land_section":"大隱段","land_no":"0546-0000","channel_name":"埔林圳幹線","pile_no":"","estimated_capacity_kw":266.5,"note":"廠商評估266.5kW\r\n*尚在評估規劃中，需再評估用地問題\r\n列入萬長春圳小水力發電設備建置案契約擴充。\r\n擴充最快要114.115年才會進行，暫不列入。","progress":"對內，尚需評估","version_type":""},{"_idx":24,"_kind":"hydro_potential","serial":"","mgmt":"宜蘭","county":"宜蘭縣","township":"三星鄉","land_section":"雙賢一段","land_no":"0107-0000","channel_name":"月眉圳","pile_no":"","estimated_capacity_kw":156.8,"note":"需再評估用地問題\r\n用地問題難解，暫不列入","progress":"對內，尚需評估","version_type":""},{"_idx":25,"_kind":"hydro_potential","serial":"","mgmt":"宜蘭","county":"宜蘭縣","township":"三星鄉","land_section":"天山段","land_no":"1267-0000","channel_name":"叭哩沙圳","pile_no":"","estimated_capacity_kw":295.57,"note":"需再評估用地問題\r\n用地問題難解，暫不列入","progress":"對內，尚需評估","version_type":""},{"_idx":26,"_kind":"hydro_potential","serial":"11","mgmt":"花蓮","county":"花蓮縣","township":"壽豐鄉","land_section":"潭北段","land_no":"0952-0000","channel_name":"志學圳沉砂池","pile_no":"0K+295","estimated_capacity_kw":235,"note":"1.本案擬採離槽式建置，取水口至電廠間管路埋設經公有地，待取得核可後再行辦理上網招標。\r\n2.112/07/06案場已完成管變，因原評估之小水力廠商之評估案內容為於取水口前即以埋設壓力鋼管方式經河床至志學圳沉砂池，並非由原有農田水利設施兼作其他使用方式開發小水力案場，另由原有圳路採離槽式辦理，高程坡度不足，故尚需再行評估。","progress":"對內，尚需評估","version_type":""},{"_idx":27,"_kind":"hydro_potential","serial":"12","mgmt":"花蓮","county":"花蓮縣","township":"吉安鄉","land_section":"初音段","land_no":"425、586、592、538、539、556、554、468","channel_name":"吉安圳2幹線","pile_no":"1K+237.87","estimated_capacity_kw":80,"note":"1.本案招標文件擬訂中，待署最新版本定案後，即可辦理招標文件上網公告招商","progress":"對內，尚需評估","version_type":""},{"_idx":28,"_kind":"hydro_potential","serial":"13","mgmt":"花蓮","county":"花蓮縣","township":"壽豐鄉","land_section":"大湖腳段","land_no":"940、940-1、940-2、941-4、941-6、946-1、943、944-1、951-1、951-2、966、967、820、824、935、944、944-2、949、951、954、914、624-2、627-3、635-3、647-1、648-4、964-1","channel_name":"豐田圳","pile_no":"0K+725","estimated_capacity_kw":120,"note":"於113/10/08辦理小水力潛力點評估現場會勘","progress":"對內，尚需評估","version_type":""},{"_idx":29,"_kind":"hydro_potential","serial":"","mgmt":"臺東","county":"臺東縣","township":"池上鄉","land_section":"牧野","land_no":"759","channel_name":"池上圳進水口導水路","pile_no":"0k+660","estimated_capacity_kw":52,"note":"114/1/10本案經評估不具經濟效益，擬不續辦。","progress":"對內，尚需評估","version_type":""},{"_idx":30,"_kind":"hydro_potential","serial":"","mgmt":"屏東","county":"屏東縣","township":"高樹鄉","land_section":"公園","land_no":"58","channel_name":"舊寮圳幹線調蓄設施","pile_no":"","estimated_capacity_kw":null,"note":"1.因尚未至現場量測圳路及水量資料，後續會再補上預估設置容量資料。\r\n2.於114/04/22到現場現勘，當舊寮圳沉砂池完工後，舊寮圳幹線的水會走上側之水路進入沉沙池，並不會走下側之水路(沉沙池需疏圳或維護時才會走這裡)，故此處並不適合發展小水力發電。","progress":"對內，尚需評估","version_type":""},{"_idx":31,"_kind":"hydro_potential","serial":"14","mgmt":"臺東","county":"臺東縣","township":"卑南鄉","land_section":"利泰段","land_no":"0143-0000、0144-0000、0145-0000、0146-0000、0176-0000、0177-0000、0178-0000、0179-0000、0182-0000、0183-0000、0184-0000、0205-0000","channel_name":"卑南上圳小水力發電設備建置案","pile_no":"","estimated_capacity_kw":250,"note":"1.114/05/16廠商未能依約於期限內取得相關部落同意發開行為，業於114年4月30日函請管理處同意終止契約(源林字第1140430001號)，管理處於114/05/09同意廠商終止契約(農水臺東字第1148821778號)。\r\n2.待有廠商可以與部落順利溝通，提升部落開發意願後，再辦標租。","progress":"對內，尚需評估","version_type":""},{"_idx":32,"_kind":"hydro_potential","serial":"15","mgmt":"苗栗","county":"苗栗縣","township":"後龍鎮","land_section":"砂崙湖段","land_no":"0008-0000","channel_name":"水尾子圳","pile_no":"","estimated_capacity_kw":null,"note":"114/08/22管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":33,"_kind":"hydro_potential","serial":"16","mgmt":"苗栗","county":"苗栗縣","township":"後龍鎮","land_section":"下浮尾段","land_no":"0598-0000","channel_name":"後龍圳","pile_no":"","estimated_capacity_kw":null,"note":"114/08/22管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":34,"_kind":"hydro_potential","serial":"17","mgmt":"苗栗","county":"苗栗縣","township":"頭屋鄉","land_section":"茄冬段","land_no":"1124-0000","channel_name":"明德幹渠","pile_no":"","estimated_capacity_kw":null,"note":"114/08/22管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":35,"_kind":"hydro_potential","serial":"18","mgmt":"石門","county":"桃園市","township":"平鎮區","land_section":"北商段","land_no":"0526-0000","channel_name":"中壢支渠","pile_no":"0K+30","estimated_capacity_kw":null,"note":"114/08/22管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":36,"_kind":"hydro_potential","serial":"19","mgmt":"石門","county":"桃園市","township":"楊梅區","land_section":"雙榮段","land_no":"0044-0000","channel_name":"桂竹子分渠","pile_no":"0K+5","estimated_capacity_kw":null,"note":"114/08/22管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":37,"_kind":"hydro_potential","serial":"20","mgmt":"石門","county":"桃園市","township":"平鎮區","land_section":"鎮興段","land_no":"1442-0000","channel_name":"山溪支渠","pile_no":"0K+10","estimated_capacity_kw":null,"note":"114/08/22管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":38,"_kind":"hydro_potential","serial":"21","mgmt":"石門","county":"桃園市","township":"楊梅區","land_section":"上湖段","land_no":"0005-0001","channel_name":"三湖分渠","pile_no":"0K+45","estimated_capacity_kw":null,"note":"114/08/22管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":39,"_kind":"hydro_potential","serial":"22","mgmt":"桃園","county":"桃園市","township":"八德區","land_section":"高明段","land_no":"819、819-1、819-2","channel_name":"桃園大圳2支線","pile_no":"0+632~0+640","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":40,"_kind":"hydro_potential","serial":"23","mgmt":"桃園","county":"桃園市","township":"蘆竹區","land_section":"文中段","land_no":"746、745","channel_name":"桃園大圳2支線","pile_no":"2+280~2+288","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":41,"_kind":"hydro_potential","serial":"24","mgmt":"桃園","county":"桃園市","township":"蘆竹區","land_section":"新福段","land_no":"913","channel_name":"桃園大圳2支線","pile_no":"2+772~2+780","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":42,"_kind":"hydro_potential","serial":"25","mgmt":"桃園","county":"桃園市","township":"蘆竹區","land_section":"新福段","land_no":"896","channel_name":"桃園大圳2支線","pile_no":"2+942~2+950","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":43,"_kind":"hydro_potential","serial":"26","mgmt":"桃園","county":"桃園市","township":"蘆竹區","land_section":"新福段","land_no":"711、712","channel_name":"桃園大圳2支線","pile_no":"3+337~3+345","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":44,"_kind":"hydro_potential","serial":"27","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"忠富段","land_no":"33","channel_name":"8支線","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":45,"_kind":"hydro_potential","serial":"28","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"忠富段","land_no":"6","channel_name":"8支線","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":46,"_kind":"hydro_potential","serial":"29","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"忠愛段","land_no":"38","channel_name":"8支線","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":47,"_kind":"hydro_potential","serial":"30","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"廣福段","land_no":"678","channel_name":"8支本線","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":48,"_kind":"hydro_potential","serial":"31","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"廣福段","land_no":"1074","channel_name":"8支分線","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":49,"_kind":"hydro_potential","serial":"32","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"忠愛段","land_no":"2022","channel_name":"9支線","pile_no":"0K+755","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":50,"_kind":"hydro_potential","serial":"33","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"忠愛段","land_no":"2022","channel_name":"9支線","pile_no":"1K+040","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":51,"_kind":"hydro_potential","serial":"34","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"大堀段","land_no":"1472","channel_name":"62-1號河水導水路","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":52,"_kind":"hydro_potential","serial":"35","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"大堀段","land_no":"115","channel_name":"9-8號池給水塔","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":53,"_kind":"hydro_potential","serial":"36","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"新坡段","land_no":"1690","channel_name":"9-14號池給水塔","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":54,"_kind":"hydro_potential","serial":"37","mgmt":"桃園","county":"桃園市","township":"觀音區","land_section":"埔頂","land_no":"854","channel_name":"水尾溝排水支線","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":55,"_kind":"hydro_potential","serial":"38","mgmt":"桃園","county":"桃園市","township":"新屋區","land_section":"啟文","land_no":"1128","channel_name":"10支線","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":56,"_kind":"hydro_potential","serial":"39","mgmt":"桃園","county":"桃園市","township":"新屋區","land_section":"國有未編列用地","land_no":"國有未編列用地","channel_name":"11支線","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":57,"_kind":"hydro_potential","serial":"40","mgmt":"桃園","county":"桃園市","township":"八德區","land_section":"前程段","land_no":"624","channel_name":"桃園大圳(幹線)","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":58,"_kind":"hydro_potential","serial":"41","mgmt":"桃園","county":"桃園市","township":"八德區","land_section":"前程段","land_no":"625","channel_name":"桃園大圳(幹線)","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":59,"_kind":"hydro_potential","serial":"42","mgmt":"桃園","county":"桃園市","township":"桃園區","land_section":"桃圳段","land_no":"526","channel_name":"桃園大圳(幹線)","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":60,"_kind":"hydro_potential","serial":"43","mgmt":"桃園","county":"桃園市","township":"八德區","land_section":"茄苳段","land_no":"804","channel_name":"桃園大圳(幹線)","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":61,"_kind":"hydro_potential","serial":"44","mgmt":"桃園","county":"桃園市","township":"桃園區","land_section":"雙龍段","land_no":"819","channel_name":"桃園大圳(幹線)","pile_no":"","estimated_capacity_kw":null,"note":"114/09/05管理處提供潛力地點","progress":"對內，尚需評估","version_type":""},{"_idx":62,"_kind":"hydro_potential","serial":"45","mgmt":"宜蘭","county":"宜蘭縣","township":"冬山鄉","land_section":"柯林一段","land_no":"0082-0000地號","channel_name":"萬長春圳","pile_no":"","estimated_capacity_kw":252,"note":"1.經實際勘查，本案發電後退水管線銜接既有萬長春圳涵管工程，恐影響管壁結構安全之虞，經評估風險仍無法降低，因此廠商無法於同意備案展延期間修正計劃書，並取得同意。故114/09/16廠商提出終止契約(114續律字第0902號)，經114/09/23協商會議達成共識後，雙方同意終止契約，並於114/09/30依農水宜蘭字第1148124893號函辦理。\r\n2.待有廠商能針對管線耐久性、退水處理與灌溉維持提出具體可證的工程對策，再行評估是否辦理招商。","progress":"對內，尚需評估","version_type":""},{"_idx":63,"_kind":"hydro_potential","serial":"46","mgmt":"屏東","county":"屏東縣","township":"高樹鄉","land_section":"大山寮","land_no":"486","channel_name":"新圳","pile_no":"","estimated_capacity_kw":null,"note":"114/10/27管理處提供潛力地點\r\n該處屬縣管區排(朴子溪排水支線)","progress":"","version_type":""},{"_idx":64,"_kind":"hydro_potential","serial":"47","mgmt":"屏東","county":"屏東縣","township":"內埔鄉","land_section":"水門風景","land_no":"1131","channel_name":"隘寮圳","pile_no":"","estimated_capacity_kw":null,"note":"114/10/27管理處提供潛力地點","progress":"","version_type":""}],"hydro_inquiry":[{"_idx":2,"_kind":"hydro_inquiry","serial":"1","mgmt":"南投","inquiry_date":"113.09.25","inquiry_unit":"迪暘有限公司","name":"楊浤源","inquiry_method":"電話","inquiry_type":"測試","inquiry_content":"有關阿罩霧第一圳導水路幹線申請小水力測試案申請詢問","handling_status":"1.待公司補件申請書遺漏資料\r\n2.113/11/01已送申請書，進行測試案申請流程，移至測試案追蹤。","closure_date":"113.11.01"},{"_idx":3,"_kind":"hydro_inquiry","serial":"2","mgmt":"南投","inquiry_date":"113.09.23","inquiry_unit":"源灃電力工業股份有限公司","name":"曾明炘","inquiry_method":"來函","inquiry_type":"其他","inquiry_content":"有關阿罩霧第一圳導水路幹線潛力案場請求評估辦理招標案","handling_status":"管理處已於113/10/09函覆並評估中","closure_date":"113.10.09"},{"_idx":4,"_kind":"hydro_inquiry","serial":"3","mgmt":"南投","inquiry_date":"113.11.04","inquiry_unit":"新陳有限公司","name":"顏翊浲","inquiry_method":"電話","inquiry_type":"其他","inquiry_content":"詢問管理處潛力場址","handling_status":"提供管理處潛力案場給該公司","closure_date":"113.11.04"},{"_idx":5,"_kind":"hydro_inquiry","serial":"4","mgmt":"南投","inquiry_date":"113.11.05","inquiry_unit":"富宇太陽能科技","name":"洪柏超","inquiry_method":"電話","inquiry_type":"其他","inquiry_content":"詢問管理處潛力場址","handling_status":"提供管理處潛力案場給該公司","closure_date":"113.11.05"},{"_idx":6,"_kind":"hydro_inquiry","serial":"5","mgmt":"石門","inquiry_date":"113.11.05","inquiry_unit":"台禹監測科技股份有限公司","name":"莊旭楨董事長","inquiry_method":"電話","inquiry_type":"測試","inquiry_content":"公司小水力機組樣機目前正在組裝，待組裝完成後，將申請小水力測試","handling_status":"尚未收到申請詢問","closure_date":""},{"_idx":7,"_kind":"hydro_inquiry","serial":"6","mgmt":"南投","inquiry_date":"113.11.19","inquiry_unit":"源灃電力工業股份有限公司","name":"曾明炘","inquiry_method":"電話","inquiry_type":"測試","inquiry_content":"索取農水設施兼作其他使用申請書","handling_status":"已來管理處領取","closure_date":"113.11.19"},{"_idx":8,"_kind":"hydro_inquiry","serial":"7","mgmt":"南投","inquiry_date":"113.12.09","inquiry_unit":"源灃電力工業股份有限公司","name":"曾明炘","inquiry_method":"會勘","inquiry_type":"招標","inquiry_content":"詢問該場址可行性(北投新圳幹線)","handling_status":"經評估後不列入潛力案場","closure_date":"114.01.08"},{"_idx":9,"_kind":"hydro_inquiry","serial":"8","mgmt":"南投","inquiry_date":"113.12.25","inquiry_unit":"富宇太陽能科技","name":"洪柏超","inquiry_method":"拜訪","inquiry_type":"其他","inquiry_content":"詢問管理處潛力場址","handling_status":"提供管理處潛力案場給該公司","closure_date":"113.12.25"},{"_idx":10,"_kind":"hydro_inquiry","serial":"9","mgmt":"高雄","inquiry_date":"114.01.02","inquiry_unit":"探淵科技股份有限公司","name":"楊勝崎","inquiry_method":"拜訪","inquiry_type":"其他","inquiry_content":"說明有關獅子頭圳一幹線潛力案場社區居民參與小水力發電投資建置之意願及效益，和針對公民電廠參與之招標方式提供見解。","handling_status":"依署本部核定之標租方式辦理","closure_date":"114.01.02"},{"_idx":11,"_kind":"hydro_inquiry","serial":"10","mgmt":"桃園","inquiry_date":"114.02.12","inquiry_unit":"城品國際建設","name":"莊顥","inquiry_method":"電話","inquiry_type":"招標","inquiry_content":"詢問如有意願要合作，目前都是以何種方式辦理?","handling_status":"電聯回復:目前皆以公開招商的方式辦理，並請洽詢單位提出手邊有的資料供管理處參考。","closure_date":"114.02.13"},{"_idx":12,"_kind":"hydro_inquiry","serial":"11","mgmt":"苗栗","inquiry_date":"114.07.03","inquiry_unit":"敏昌豪綠電顧問公司","name":"湯先生","inquiry_method":"電話","inquiry_type":"其他","inquiry_content":"該司詢問明德水庫上游集水區的野溪，是否有潛力地點可作為小水力測試地點。","handling_status":"該處非管理處轄管區域，故請該司連繫當地鄉鎮公所做後續辦理。","closure_date":"114.07.03"}]}</script>
+<script type="application/json" id="snapshot-metadata">{"period":"11506","created_at":"2026-06-12T13:04:51.016Z","snapshot_date":"2026-06-12","snapshot_source":"雙週報管考_-1150609小水力盤點案場資料表及申設中案場進度表_彙整版V2.xlsx + 雙週報管考_-各管理處太陽光電進度_11505彙總v.xlsx + 雙週報管考_-農田水利署農業水域_圳路、農業水庫及埤塘_太陽光電盤點資料_1150527v.xlsx"}</script>
+
+<script>
+// =============================================================
+// 月報填報頁面邏輯(Stage C - 5 個 sheet 完整版)
+// =============================================================
+
+const SNAPSHOT = JSON.parse(document.getElementById('snapshot-data').textContent);
+const METADATA = JSON.parse(document.getElementById('snapshot-metadata').textContent);
+
+// 太陽光電「案場進度」可能的值
+const SOLAR_PROGRESS_OPTIONS = ['申設中', '待施工', '規劃推動', '已併網-混合', '已併網'];
+// 太陽光電「目前階段」可能的值
+const SOLAR_STAGE_OPTIONS = ['土地容許', '施工階段', '併聯審查', '已解約', '尚未送件', '已併網', '併聯審查(未送)', '電業籌設'];
+// 洽詢方式
+const INQUIRY_METHODS = ['電話', '拜訪', '來函', '會勘', '其他'];
+// 洽詢類型
+const INQUIRY_TYPES = ['測試', '招標', '其他'];
+// 11 個審查欄位 key
+const REVIEW_FIELDS = [
+  { key: 'feeder', label: '饋線保留' },
+  { key: 'internal_review', label: '管理處內部審查' },
+  { key: 'taipower_review', label: '台電併聯審查' },
+  { key: 'water_right', label: '水權申請' },
+  { key: 'water_structure', label: '水利建造物申請' },
+  { key: 'soil_conservation', label: '水保計畫申請' },
+  { key: 'land_permit', label: '土地容許(含農業變更)' },
+  { key: 'electric_setup', label: '電業籌設' },
+  { key: 'consent_filed', label: '同意備案' },
+  { key: 'briefing', label: '說明會' },
+  { key: 'construction_permit', label: '施工許可' }
+];
+
+// 全域狀態
+const state = {
+  mgmt: '',
+  fillerName: '',
+  fillerPhone: '',
+  category: 'solar',        // 'solar' or 'hydro'
+  hydroSubtab: 'hydro_tender',
+  data: {
+    solar_addendum: [],
+    hydro_tender: [],
+    hydro_test: [],
+    hydro_potential: [],
+    hydro_inquiry: []
+  }
+};
+
+let _newIdCounter = 0;
+function nextNewId() { _newIdCounter++; return 'NEW_' + String(_newIdCounter).padStart(3, '0'); }
+
+function htmlEscape(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+}
+
+function isModified(s) {
+  if (s._new || s._deleted) return false;
+  const current = { ...s };
+  delete current._kind; delete current._idx; delete current._id;
+  delete current._new; delete current._deleted; delete current._original;
+  try {
+    return JSON.stringify(current) !== s._original;
+  } catch(e) { return false; }
+}
+
+// 管理處改變 → 載入該處 5 種資料
+function onMgmtChange() {
+  const sel = document.getElementById('mgmt-select');
+  const mgmt = sel.value;
+  state.mgmt = mgmt;
+  
+  if (!mgmt) {
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('step3').style.display = 'none';
+    return;
+  }
+  
+  // 從 snapshot 撈出該處的所有資料 - 注意 mgmt 名稱可能有「台中/臺中」差異,做寬鬆比對
+  const mgmtMatch = (a, b) => {
+    if (!a || !b) return false;
+    const norm = s => s.replace(/^台/, '臺');  // 統一用「臺」
+    return norm(a) === norm(b);
+  };
+  
+  ['solar_addendum', 'hydro_tender', 'hydro_test', 'hydro_potential', 'hydro_inquiry'].forEach(key => {
+    state.data[key] = (SNAPSHOT[key] || []).filter(s => mgmtMatch(s.mgmt, mgmt)).map((s, i) => ({
+      ...s,
+      _idx: i,
+      _id: key + '_' + i,
+      _new: false,
+      _deleted: false,
+      _original: JSON.stringify(s)
+    }));
+  });
+  
+  document.getElementById('step2').style.display = '';
+  document.getElementById('step3').style.display = '';
+  
+  // 預設顯示太陽光電
+  switchCategory('solar');
+}
+
+// 切換 L1 Tab(太陽光電 / 小水力)
+function switchCategory(cat) {
+  state.category = cat;
+  document.getElementById('tab-solar').classList.toggle('active', cat === 'solar');
+  document.getElementById('tab-hydro').classList.toggle('active', cat === 'hydro');
+  document.getElementById('content-solar').style.display = cat === 'solar' ? '' : 'none';
+  document.getElementById('content-hydro').style.display = cat === 'hydro' ? '' : 'none';
+  renderAll();
+}
+
+// 切換 L2 子分頁(招標/測試/潛力/洽詢)
+function switchHydroSubtab(key) {
+  state.hydroSubtab = key;
+  const map = { hydro_tender: 'tender', hydro_test: 'test', hydro_potential: 'potential', hydro_inquiry: 'inquiry' };
+  Object.entries(map).forEach(([k, suffix]) => {
+    document.getElementById('subtab-' + suffix).classList.toggle('active', k === key);
+    document.getElementById('sub-' + suffix).style.display = k === key ? '' : 'none';
+  });
+  renderSites(key);
+}
+
+// 重渲染所有
+function renderAll() {
+  ['solar_addendum', 'hydro_tender', 'hydro_test', 'hydro_potential', 'hydro_inquiry'].forEach(renderSites);
+  updateCounts();
+}
+
+function updateCounts() {
+  const solarTotal = state.data.solar_addendum.filter(s => !s._deleted).length;
+  const hydroTotal = state.data.hydro_tender.filter(s=>!s._deleted).length + 
+                     state.data.hydro_test.filter(s=>!s._deleted).length + 
+                     state.data.hydro_potential.filter(s=>!s._deleted).length + 
+                     state.data.hydro_inquiry.filter(s=>!s._deleted).length;
+  document.getElementById('tab-solar-count').textContent = '(' + solarTotal + ')';
+  document.getElementById('tab-hydro-count').textContent = '(' + hydroTotal + ')';
+  document.getElementById('subtab-tender-count').textContent = state.data.hydro_tender.filter(s=>!s._deleted).length;
+  document.getElementById('subtab-test-count').textContent = state.data.hydro_test.filter(s=>!s._deleted).length;
+  document.getElementById('subtab-potential-count').textContent = state.data.hydro_potential.filter(s=>!s._deleted).length;
+  document.getElementById('subtab-inquiry-count').textContent = state.data.hydro_inquiry.filter(s=>!s._deleted).length;
+}
+
+// 編輯欄位
+function updateField(key, id, field, value) {
+  const arr = state.data[key];
+  const s = arr.find(x => x._id === id);
+  if (!s) return;
+  // 數字欄位轉型
+  if (['capacity_mw', 'capacity_kw', 'site_count', 'unit_count', 'unit_capacity_kw', 'estimated_capacity_kw'].includes(field)) {
+    s[field] = value === '' ? null : parseFloat(value);
+  } else {
+    s[field] = value;
+  }
+  // 更新計數(可能改了刪除狀態以外的)
+  updateCounts();
+}
+
+// 切換刪除狀態
+function toggleDelete(key, id) {
+  const arr = state.data[key];
+  const idx = arr.findIndex(x => x._id === id);
+  if (idx < 0) return;
+  const s = arr[idx];
+  if (s._new) {
+    arr.splice(idx, 1);
+  } else {
+    s._deleted = !s._deleted;
+  }
+  renderSites(key);
+  updateCounts();
+}
+
+// 11 個審查欄位的快速插入
+function insertSymbol(key, id, field, symbol) {
+  updateField(key, id, field, symbol);
+  // 更新對應 textarea
+  const ta = document.querySelector(`textarea[data-card="${id}"][data-field="${field}"]`);
+  if (ta) ta.value = symbol;
+  // 重渲染這張卡(badge 更新)
+  renderSites(key);
+}
+
+// 新增案場
+function addSite(key) {
+  const templates = {
+    solar_addendum: {
+      contract_name: '', site_progress: '', vendor: '', site_name: '', site_count: null,
+      capacity_mw: null, current_stage: '', sign_date: '', install_deadline: '',
+      expire_status: '', current_operation: '', difficulty: '', team_suggestion: '', note: ''
+    },
+    hydro_tender: {
+      county: '', township: '', land_section: '', land_no: '', contract_name: '', case_name: '',
+      capacity_kw: null, unit_count: null, unit_capacity_kw: null,
+      tender_period: '', sign_date: '',
+      feeder: '', internal_review: '', taipower_review: '', water_right: '', water_structure: '',
+      soil_conservation: '', land_permit: '', electric_setup: '', consent_filed: '',
+      briefing: '', construction_permit: '',
+      estimated_completion: '', vendor: '', operation: '', difficulty: '', planned_next: '', note: ''
+    },
+    hydro_test: {
+      county: '', township: '', land_section: '', land_no: '', channel_name: '',
+      capacity_kw: null, pile_no: '', unit_count: null, unit_capacity_kw: null,
+      test_apply_from: '', test_apply_to: '', sign_date: '',
+      internal_review: '', actual_test_date: '', vendor: '', operation: '',
+      planned_next: '', note: ''
+    },
+    hydro_potential: {
+      county: '', township: '', land_section: '', land_no: '', channel_name: '',
+      pile_no: '', estimated_capacity_kw: null, note: '', progress: '', version_type: ''
+    },
+    hydro_inquiry: {
+      inquiry_date: '', inquiry_unit: '', name: '', inquiry_method: '', inquiry_type: '',
+      inquiry_content: '', handling_status: '', closure_date: ''
+    }
+  };
+  
+  state.data[key].push({
+    _kind: key, _idx: -1, _id: nextNewId(), _new: true, _deleted: false, _original: '',
+    mgmt: state.mgmt,
+    ...templates[key]
+  });
+  renderSites(key);
+  updateCounts();
+  // 滾到新案場
+  setTimeout(() => {
+    const cards = document.querySelectorAll('#list-' + key + ' .site-card');
+    const last = cards[cards.length - 1];
+    if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 50);
+}
+
+// 通用 renderSites 入口
+function renderSites(key) {
+  const container = document.getElementById('list-' + key);
+  if (!container) return;
+  
+  const searchInputId = {
+    solar_addendum: 'solar-search',
+    hydro_tender: 'tender-search',
+    hydro_test: 'test-search',
+    hydro_potential: 'potential-search',
+    hydro_inquiry: 'inquiry-search'
+  }[key];
+  const search = (document.getElementById(searchInputId)?.value || '').toLowerCase();
+  
+  let filtered = state.data[key];
+  if (search) {
+    filtered = filtered.filter(s => {
+      // 不同類型 sheet 用不同欄位搜尋
+      const blob = [
+        s.site_name, s.case_name, s.channel_name, s.contract_name, 
+        s.vendor, s.inquiry_unit, s.inquiry_content
+      ].filter(Boolean).join(' ').toLowerCase();
+      return blob.includes(search);
+    });
+  }
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty">' + (search ? '沒有符合搜尋的案場' : '此管理處目前沒有資料,可點上方「+ 新增」按鈕新增') + '</div>';
+    return;
+  }
+  
+  container.innerHTML = filtered.map(s => renderCard(key, s)).join('');
+}
+
+// 依 key 分派到不同的卡片渲染函式
+function renderCard(key, s) {
+  let badge = '';
+  if (s._new) badge = '<span class="status-badge status-new">+ 新增</span>';
+  else if (s._deleted) badge = '<span class="status-badge status-deleted">已刪除</span>';
+  else if (isModified(s)) badge = '<span class="status-badge status-modified">已修改</span>';
+  
+  const titleField = {
+    solar_addendum: s.site_name || s.contract_name,
+    hydro_tender: s.case_name || s.contract_name,
+    hydro_test: s.channel_name,
+    hydro_potential: s.channel_name,
+    hydro_inquiry: s.inquiry_unit
+  }[key] || '(尚未命名)';
+  
+  const cardOpen = `<div class="site-card ${s._new?'new':''}${s._deleted?' deleted':''}" data-id="${s._id}">
+    <div class="site-card-header">
+      <div class="site-card-title">${htmlEscape(titleField)} ${badge}</div>
+      <button class="btn-danger" onclick="toggleDelete('${key}', '${s._id}')">${s._deleted?'↺ 還原':'🗑 刪除'}</button>
+    </div>`;
+  const cardClose = `</div>`;
+  
+  if (s._deleted) return cardOpen + cardClose;
+  
+  let body = '';
+  if (key === 'solar_addendum')      body = renderSolarFields(s);
+  else if (key === 'hydro_tender')   body = renderTenderFields(s);
+  else if (key === 'hydro_test')     body = renderTestFields(s);
+  else if (key === 'hydro_potential')body = renderPotentialFields(s);
+  else if (key === 'hydro_inquiry')  body = renderInquiryFields(s);
+  
+  return cardOpen + body + cardClose;
+}
+
+// helper: 一般文字欄位
+function inp(key, id, field, value, type) {
+  type = type || 'text';
+  return `<input type="${type}" value="${htmlEscape(value)}" oninput="updateField('${key}','${id}','${field}',this.value)">`;
+}
+function ta(key, id, field, value, rows) {
+  return `<textarea rows="${rows||3}" oninput="updateField('${key}','${id}','${field}',this.value)">${htmlEscape(value)}</textarea>`;
+}
+function sel(key, id, field, value, options) {
+  return `<select onchange="updateField('${key}','${id}','${field}',this.value)">
+    <option value="">(請選擇)</option>
+    ${options.map(o => `<option value="${o}"${value===o?' selected':''}>${o}</option>`).join('')}
+  </select>`;
+}
+
+// 太陽光電(附件一)
+function renderSolarFields(s) {
+  return `
+    <div class="grid grid-1"><div>
+      <label>案場名稱<span class="req">*</span></label>
+      ${inp('solar_addendum', s._id, 'site_name', s.site_name)}
+    </div></div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>契約名稱</label>${inp('solar_addendum', s._id, 'contract_name', s.contract_name)}</div>
+      <div><label>設置廠商</label>${inp('solar_addendum', s._id, 'vendor', s.vendor)}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>案場進度</label>${sel('solar_addendum', s._id, 'site_progress', s.site_progress, SOLAR_PROGRESS_OPTIONS)}</div>
+      <div><label>目前階段</label>${sel('solar_addendum', s._id, 'current_stage', s.current_stage, SOLAR_STAGE_OPTIONS)}</div>
+      <div><label>裝置容量(MW)</label>${inp('solar_addendum', s._id, 'capacity_mw', s.capacity_mw, 'number')}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>案場數量</label>${inp('solar_addendum', s._id, 'site_count', s.site_count, 'number')}</div>
+      <div><label>簽約日期</label>${inp('solar_addendum', s._id, 'sign_date', s.sign_date)}</div>
+      <div><label>設置期限</label>${inp('solar_addendum', s._id, 'install_deadline', s.install_deadline)}</div>
+    </div>
+    <div class="main-field" style="margin-top:8px">
+      <label>📝 目前辦理情況(主要更新欄位)</label>
+      ${ta('solar_addendum', s._id, 'current_operation', s.current_operation, 5)}
+    </div>
+    <div class="grid grid-1" style="margin-top:8px">
+      <div><label>困難點說明</label>${ta('solar_addendum', s._id, 'difficulty', s.difficulty, 2)}</div>
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>專案團隊處理建議</label>${ta('solar_addendum', s._id, 'team_suggestion', s.team_suggestion, 2)}</div>
+      <div><label>備註</label>${ta('solar_addendum', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 招標案
+function renderTenderFields(s) {
+  // 11 個審查欄位
+  const reviewBlocks = REVIEW_FIELDS.map(rf => `
+    <div class="review-field">
+      <label>${rf.label}</label>
+      <textarea rows="2" data-card="${s._id}" data-field="${rf.key}" 
+        oninput="updateField('hydro_tender','${s._id}','${rf.key}',this.value)">${htmlEscape(s[rf.key]||'')}</textarea>
+      <div class="quick-buttons">
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','○')">○ 已通過</button>
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','X')">X 未辦</button>
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','Δ')">Δ 進行中</button>
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','-')">- 不適用</button>
+      </div>
+    </div>
+  `).join('');
+  
+  return `
+    <div class="grid grid-1"><div>
+      <label>案名<span class="req">*</span></label>${inp('hydro_tender', s._id, 'case_name', s.case_name)}
+    </div></div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>契約名稱</label>${inp('hydro_tender', s._id, 'contract_name', s.contract_name)}</div>
+      <div><label>廠商</label>${inp('hydro_tender', s._id, 'vendor', s.vendor)}</div>
+    </div>
+    
+    <div class="subsection-title">地點資訊</div>
+    <div class="grid grid-2">
+      <div><label>縣市</label>${inp('hydro_tender', s._id, 'county', s.county)}</div>
+      <div><label>鄉鎮市區</label>${inp('hydro_tender', s._id, 'township', s.township)}</div>
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>地段</label>${inp('hydro_tender', s._id, 'land_section', s.land_section)}</div>
+      <div><label>地號</label>${inp('hydro_tender', s._id, 'land_no', s.land_no)}</div>
+    </div>
+    
+    <div class="subsection-title">設備規格</div>
+    <div class="grid grid-3">
+      <div><label>裝置容量(kW)</label>${inp('hydro_tender', s._id, 'capacity_kw', s.capacity_kw, 'number')}</div>
+      <div><label>機組總數量(組)</label>${inp('hydro_tender', s._id, 'unit_count', s.unit_count, 'number')}</div>
+      <div><label>每組機組裝置容量(kW)</label>${inp('hydro_tender', s._id, 'unit_capacity_kw', s.unit_capacity_kw, 'number')}</div>
+    </div>
+    
+    <div class="subsection-title">時程</div>
+    <div class="grid grid-3">
+      <div><label>招商期間</label>${ta('hydro_tender', s._id, 'tender_period', s.tender_period, 2)}</div>
+      <div><label>簽約日期</label>${inp('hydro_tender', s._id, 'sign_date', s.sign_date)}</div>
+      <div><label>預計完工日期</label>${inp('hydro_tender', s._id, 'estimated_completion', s.estimated_completion)}</div>
+    </div>
+    
+    <div class="subsection-title">11 項審查進度(點按鈕快速插入 ○ / X / Δ / - 或自由輸入)</div>
+    <div class="grid grid-2" style="gap:14px">
+      ${reviewBlocks}
+    </div>
+    
+    <div class="main-field" style="margin-top:14px">
+      <label>📝 辦理情形(主要更新欄位)</label>
+      ${ta('hydro_tender', s._id, 'operation', s.operation, 5)}
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>遭遇困難事項</label>${ta('hydro_tender', s._id, 'difficulty', s.difficulty, 2)}</div>
+      <div><label>近期預計規劃辦理事項</label>${ta('hydro_tender', s._id, 'planned_next', s.planned_next, 2)}</div>
+    </div>
+    <div class="grid grid-1" style="margin-top:8px">
+      <div><label>備註</label>${ta('hydro_tender', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 測試案
+function renderTestFields(s) {
+  return `
+    <div class="grid grid-1"><div>
+      <label>圳路名稱<span class="req">*</span></label>${inp('hydro_test', s._id, 'channel_name', s.channel_name)}
+    </div></div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>廠商</label>${inp('hydro_test', s._id, 'vendor', s.vendor)}</div>
+      <div><label>樁號</label>${inp('hydro_test', s._id, 'pile_no', s.pile_no)}</div>
+    </div>
+    
+    <div class="subsection-title">地點</div>
+    <div class="grid grid-4">
+      <div><label>縣市</label>${inp('hydro_test', s._id, 'county', s.county)}</div>
+      <div><label>鄉鎮市區</label>${inp('hydro_test', s._id, 'township', s.township)}</div>
+      <div><label>地段</label>${inp('hydro_test', s._id, 'land_section', s.land_section)}</div>
+      <div><label>地號</label>${inp('hydro_test', s._id, 'land_no', s.land_no)}</div>
+    </div>
+    
+    <div class="subsection-title">設備</div>
+    <div class="grid grid-3">
+      <div><label>裝置容量(kW)</label>${inp('hydro_test', s._id, 'capacity_kw', s.capacity_kw, 'number')}</div>
+      <div><label>機組總數量(組)</label>${inp('hydro_test', s._id, 'unit_count', s.unit_count, 'number')}</div>
+      <div><label>每組機組裝置容量(kW)</label>${inp('hydro_test', s._id, 'unit_capacity_kw', s.unit_capacity_kw, 'number')}</div>
+    </div>
+    
+    <div class="subsection-title">時程</div>
+    <div class="grid grid-4">
+      <div><label>申請測試日期-起</label>${inp('hydro_test', s._id, 'test_apply_from', s.test_apply_from)}</div>
+      <div><label>申請測試日期-迄</label>${inp('hydro_test', s._id, 'test_apply_to', s.test_apply_to)}</div>
+      <div><label>簽約日期</label>${inp('hydro_test', s._id, 'sign_date', s.sign_date)}</div>
+      <div><label>實際完成測試日期</label>${inp('hydro_test', s._id, 'actual_test_date', s.actual_test_date)}</div>
+    </div>
+    
+    <div class="review-field" style="margin-top:8px">
+      <label>管理處內部審查(測試計畫)</label>
+      <textarea rows="2" data-card="${s._id}" data-field="internal_review" 
+        oninput="updateField('hydro_test','${s._id}','internal_review',this.value)">${htmlEscape(s.internal_review||'')}</textarea>
+      <div class="quick-buttons">
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','○')">○ 已通過</button>
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','X')">X 未辦</button>
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','Δ')">Δ 進行中</button>
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','-')">- 不適用</button>
+      </div>
+    </div>
+    
+    <div class="main-field" style="margin-top:8px">
+      <label>📝 辦理情形(主要更新欄位)</label>
+      ${ta('hydro_test', s._id, 'operation', s.operation, 5)}
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>近期預計規劃辦理事項</label>${ta('hydro_test', s._id, 'planned_next', s.planned_next, 2)}</div>
+      <div><label>備註</label>${ta('hydro_test', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 潛力案場
+function renderPotentialFields(s) {
+  return `
+    <div class="grid grid-1"><div>
+      <label>圳路名稱<span class="req">*</span></label>${inp('hydro_potential', s._id, 'channel_name', s.channel_name)}
+    </div></div>
+    <div class="grid grid-4" style="margin-top:8px">
+      <div><label>縣市</label>${inp('hydro_potential', s._id, 'county', s.county)}</div>
+      <div><label>鄉鎮市區</label>${inp('hydro_potential', s._id, 'township', s.township)}</div>
+      <div><label>地段</label>${inp('hydro_potential', s._id, 'land_section', s.land_section)}</div>
+      <div><label>地號</label>${inp('hydro_potential', s._id, 'land_no', s.land_no)}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>樁號</label>${inp('hydro_potential', s._id, 'pile_no', s.pile_no)}</div>
+      <div><label>預估設置容量(kW)</label>${inp('hydro_potential', s._id, 'estimated_capacity_kw', s.estimated_capacity_kw, 'number')}</div>
+      <div><label>版本類型</label>${sel('hydro_potential', s._id, 'version_type', s.version_type, ['對內,尚需評估','對外'])}</div>
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>進度</label>${inp('hydro_potential', s._id, 'progress', s.progress)}</div>
+      <div><label>備註</label>${ta('hydro_potential', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 洽詢紀錄
+function renderInquiryFields(s) {
+  return `
+    <div class="grid grid-3"><div>
+      <label>洽詢日期<span class="req">*</span></label>${inp('hydro_inquiry', s._id, 'inquiry_date', s.inquiry_date)}
+    </div>
+    <div><label>結案日期</label>${inp('hydro_inquiry', s._id, 'closure_date', s.closure_date)}</div>
+    <div><label>類型</label>${sel('hydro_inquiry', s._id, 'inquiry_type', s.inquiry_type, INQUIRY_TYPES)}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>洽詢單位</label>${inp('hydro_inquiry', s._id, 'inquiry_unit', s.inquiry_unit)}</div>
+      <div><label>姓名</label>${inp('hydro_inquiry', s._id, 'name', s.name)}</div>
+      <div><label>洽詢方式</label>${sel('hydro_inquiry', s._id, 'inquiry_method', s.inquiry_method, INQUIRY_METHODS)}</div>
+    </div>
+    <div class="main-field" style="margin-top:8px">
+      <label>📝 洽詢內容(簡要說明)</label>
+      ${ta('hydro_inquiry', s._id, 'inquiry_content', s.inquiry_content, 3)}
+    </div>
+    <div class="grid grid-1" style="margin-top:8px">
+      <div><label>處理情形</label>${ta('hydro_inquiry', s._id, 'handling_status', s.handling_status, 3)}</div>
+    </div>
+  `;
+}
+
+// 確認框
+function onConfirmChange() {
+  document.getElementById('submit-btn').disabled = !document.getElementById('confirm-check').checked;
+}
+
+// 監聽填報人 input
+document.addEventListener('input', e => {
+  if (e.target.id === 'filler-name') state.fillerName = e.target.value;
+  if (e.target.id === 'filler-phone') state.fillerPhone = e.target.value;
+});
+
+// 下載 Excel
+function downloadExcel() {
+  if (!state.mgmt) { alert('請先選擇管理處'); return; }
+  if (!state.fillerName.trim()) { alert('請填寫填報人姓名'); return; }
+  
+  const now = new Date();
+  const tsStr = now.getFullYear() + '/' + 
+    String(now.getMonth()+1).padStart(2,'0') + '/' + 
+    String(now.getDate()).padStart(2,'0') + ' ' +
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0');
+  
+  const wb = XLSX.utils.book_new();
+  
+  // === Sheet 0: Metadata ===
+  const metaRows = [
+    ['月報填報 - Metadata(本表為系統匯入用,請勿手動編輯)'],
+    [],
+    ['欄位', '內容'],
+    ['期別', METADATA.period],
+    ['管理處', state.mgmt],
+    ['填報人姓名', state.fillerName],
+    ['聯絡電話', state.fillerPhone],
+    ['填報時間', tsStr],
+    ['快照日期', METADATA.snapshot_date],
+    ['快照來源', METADATA.snapshot_source],
+    [],
+    ['資料統計', ''],
+    ['太陽光電(附件一)', state.data.solar_addendum.filter(s=>!s._deleted).length],
+    ['  其中新增', state.data.solar_addendum.filter(s=>s._new&&!s._deleted).length],
+    ['  其中標記刪除', state.data.solar_addendum.filter(s=>s._deleted).length],
+    ['小水力-招標案', state.data.hydro_tender.filter(s=>!s._deleted).length],
+    ['  其中新增', state.data.hydro_tender.filter(s=>s._new&&!s._deleted).length],
+    ['  其中標記刪除', state.data.hydro_tender.filter(s=>s._deleted).length],
+    ['小水力-測試案', state.data.hydro_test.filter(s=>!s._deleted).length],
+    ['小水力-潛力案場', state.data.hydro_potential.filter(s=>!s._deleted).length],
+    ['小水力-洽詢紀錄', state.data.hydro_inquiry.filter(s=>!s._deleted).length]
+  ];
+  const ws0 = XLSX.utils.aoa_to_sheet(metaRows);
+  ws0['!cols'] = [{ wch: 28 }, { wch: 60 }];
+  XLSX.utils.book_append_sheet(wb, ws0, 'Metadata');
+  
+  // === Sheet 1: 太陽光電(附件一)===
+  const stat = s => s._deleted ? '已刪除' : (s._new ? '新增' : (isModified(s) ? '修改' : '正常'));
+  
+  const solarHeader = ['狀態', '案場ID', '管理處', '契約名稱', '案場進度', '設置廠商', '案場名稱', 
+    '案場數量', '裝置容量(MW)', '目前階段', '簽約日期', '設置期限', '到期狀態',
+    '目前辦理情況', '困難點說明', '專案團隊處理建議', '備註'];
+  const solarRows = [solarHeader].concat(state.data.solar_addendum.map(s => [
+    stat(s), s._id, s.mgmt||'', s.contract_name||'', s.site_progress||'', s.vendor||'', s.site_name||'',
+    s.site_count==null?'':s.site_count, s.capacity_mw==null?'':s.capacity_mw,
+    s.current_stage||'', s.sign_date||'', s.install_deadline||'', s.expire_status||'',
+    s.current_operation||'', s.difficulty||'', s.team_suggestion||'', s.note||''
+  ]));
+  const ws1 = XLSX.utils.aoa_to_sheet(solarRows);
+  ws1['!cols'] = [{wch:8},{wch:22},{wch:8},{wch:30},{wch:14},{wch:22},{wch:30},{wch:8},{wch:10},
+    {wch:16},{wch:12},{wch:18},{wch:10},{wch:60},{wch:30},{wch:30},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws1, '太陽光電');
+  
+  // === Sheet 2: 招標案 ===
+  const tenderHeader = ['狀態','案場ID','管理處','縣市','鄉鎮市區','地段','地號','契約名稱','案名',
+    '裝置容量(kW)','機組總數量','每組機組裝置容量(kW)','招商期間','簽約日期',
+    '饋線保留','管理處內部審查','台電併聯審查','水權申請','水利建造物申請','水保計畫申請',
+    '土地容許','電業籌設','同意備案','說明會','施工許可',
+    '預計完工日期','廠商','辦理情形','遭遇困難事項','近期預計規劃辦理事項','備註'];
+  const tenderRows = [tenderHeader].concat(state.data.hydro_tender.map(s => [
+    stat(s), s._id, s.mgmt||'', s.county||'', s.township||'', s.land_section||'', s.land_no||'',
+    s.contract_name||'', s.case_name||'',
+    s.capacity_kw==null?'':s.capacity_kw, s.unit_count==null?'':s.unit_count, s.unit_capacity_kw==null?'':s.unit_capacity_kw,
+    s.tender_period||'', s.sign_date||'',
+    s.feeder||'', s.internal_review||'', s.taipower_review||'', s.water_right||'', s.water_structure||'',
+    s.soil_conservation||'', s.land_permit||'', s.electric_setup||'', s.consent_filed||'', s.briefing||'', s.construction_permit||'',
+    s.estimated_completion||'', s.vendor||'', s.operation||'', s.difficulty||'', s.planned_next||'', s.note||''
+  ]));
+  const ws2 = XLSX.utils.aoa_to_sheet(tenderRows);
+  ws2['!cols'] = Array(tenderHeader.length).fill({wch:14});
+  ws2['!cols'][27] = {wch:60}; // 辦理情形
+  XLSX.utils.book_append_sheet(wb, ws2, '招標案');
+  
+  // === Sheet 3: 測試案 ===
+  const testHeader = ['狀態','案場ID','管理處','縣市','鄉鎮市區','地段','地號','圳路名稱',
+    '裝置容量(kW)','樁號','機組總數量','每組機組裝置容量(kW)',
+    '申請測試日期-起','申請測試日期-迄','簽約日期','管理處內部審查','實際完成測試日期',
+    '廠商','辦理情形','近期預計規劃辦理事項','備註'];
+  const testRows = [testHeader].concat(state.data.hydro_test.map(s => [
+    stat(s), s._id, s.mgmt||'', s.county||'', s.township||'', s.land_section||'', s.land_no||'',
+    s.channel_name||'',
+    s.capacity_kw==null?'':s.capacity_kw, s.pile_no||'', s.unit_count==null?'':s.unit_count, s.unit_capacity_kw==null?'':s.unit_capacity_kw,
+    s.test_apply_from||'', s.test_apply_to||'', s.sign_date||'', s.internal_review||'', s.actual_test_date||'',
+    s.vendor||'', s.operation||'', s.planned_next||'', s.note||''
+  ]));
+  const ws3 = XLSX.utils.aoa_to_sheet(testRows);
+  ws3['!cols'] = Array(testHeader.length).fill({wch:14});
+  ws3['!cols'][18] = {wch:60};
+  XLSX.utils.book_append_sheet(wb, ws3, '測試案');
+  
+  // === Sheet 4: 潛力案場 ===
+  const potHeader = ['狀態','案場ID','管理處','縣市','鄉鎮市區','地段','地號',
+    '圳路名稱','樁號','預估設置容量(kW)','備註','進度','版本類型'];
+  const potRows = [potHeader].concat(state.data.hydro_potential.map(s => [
+    stat(s), s._id, s.mgmt||'', s.county||'', s.township||'', s.land_section||'', s.land_no||'',
+    s.channel_name||'', s.pile_no||'', s.estimated_capacity_kw==null?'':s.estimated_capacity_kw,
+    s.note||'', s.progress||'', s.version_type||''
+  ]));
+  const ws4 = XLSX.utils.aoa_to_sheet(potRows);
+  ws4['!cols'] = Array(potHeader.length).fill({wch:14});
+  ws4['!cols'][10] = {wch:40};
+  XLSX.utils.book_append_sheet(wb, ws4, '潛力案場');
+  
+  // === Sheet 5: 洽詢紀錄 ===
+  const inqHeader = ['狀態','案場ID','管理處','洽詢日期','洽詢單位','姓名','洽詢方式',
+    '類型','洽詢內容','處理情形','結案日期'];
+  const inqRows = [inqHeader].concat(state.data.hydro_inquiry.map(s => [
+    stat(s), s._id, s.mgmt||'', s.inquiry_date||'', s.inquiry_unit||'', s.name||'', s.inquiry_method||'',
+    s.inquiry_type||'', s.inquiry_content||'', s.handling_status||'', s.closure_date||''
+  ]));
+  const ws5 = XLSX.utils.aoa_to_sheet(inqRows);
+  ws5['!cols'] = Array(inqHeader.length).fill({wch:14});
+  ws5['!cols'][8] = {wch:50};
+  ws5['!cols'][9] = {wch:50};
+  XLSX.utils.book_append_sheet(wb, ws5, '洽詢紀錄');
+  
+  // 檔名
+  const safeFiller = state.fillerName.replace(/[\\\/:*?"<>|]/g, '_').substring(0, 20);
+  const filename = METADATA.period + '_' + state.mgmt + '_' + safeFiller + '_' + 
+    now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + 
+    String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0') + '.xlsx';
+  
+  XLSX.writeFile(wb, filename);
+  
+  alert('✅ 已下載 ' + filename + '\n\n' +
+    '太陽光電 ' + state.data.solar_addendum.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-招標案 ' + state.data.hydro_tender.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-測試案 ' + state.data.hydro_test.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-潛力案場 ' + state.data.hydro_potential.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-洽詢紀錄 ' + state.data.hydro_inquiry.filter(s=>!s._deleted).length + ' 案\n\n' +
+    '請依現有作業流程,上傳至指定雲端資料夾。');
+}
+
+// 初始化
+document.getElementById('mgmt-select').focus();
+</script>
+
+</body>
+</html>
+

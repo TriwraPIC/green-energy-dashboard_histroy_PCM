@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 太陽光電案場：登入的使用者可讀，並可寫入自己管理處的案場（或 admin 全寫）
+    match /solar_sites/{siteId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (
+        request.auth.token.email == 'admin@triwra.gov.tw' ||
+        // 允許登入者更新資料（試做階段暫用寬鬆規則，之後可加強）
+        request.auth.token.email_verified == true ||
+        request.auth.token.email != null
+      );
+    }
+
+    // 小水力（之後擴充用）
+    match /hydro_sites/{siteId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}
