@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__PERIOD__ 月報填報 · 農田水利署綠能管考</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+         margin: 0; padding: 0; background: #f8fafc; color: #0f172a; line-height: 1.5; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  
+  /* Header */
+  .header { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .header h1 { margin: 0 0 6px; font-size: 22px; }
+  .header .meta { color: #64748b; font-size: 13px; }
+  .badge { display: inline-block; background: #ddd6fe; color: #6d28d9;
+           padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-right: 8px; }
+  
+  /* Card */
+  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .card h2 { margin: 0 0 12px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+  .card .subtitle { color: #64748b; font-size: 13px; margin-bottom: 16px; }
+  
+  /* Form */
+  .form-row { display: grid; gap: 12px; margin-bottom: 12px; }
+  .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 700px) { .form-row.cols-2, .form-row.cols-3 { grid-template-columns: 1fr; } }
+  label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  label .req { color: #dc2626; margin-left: 2px; }
+  input[type="text"], input[type="tel"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
+    font-size: 13px; font-family: inherit; background: white;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid #7c3aed; outline-offset: -1px; border-color: #7c3aed; }
+  textarea { min-height: 50px; resize: vertical; line-height: 1.4; }
+  select { cursor: pointer; }
+  
+  /* Buttons */
+  button { cursor: pointer; padding: 7px 13px; border: 1px solid #cbd5e1; border-radius: 6px;
+           background: white; font-size: 13px; font-weight: 500; font-family: inherit;
+           transition: all 0.15s; }
+  button:hover:not(:disabled) { background: #f1f5f9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: #7c3aed; color: white; border-color: #6d28d9; font-weight: 600; }
+  .btn-primary:hover:not(:disabled) { background: #6d28d9 !important; }
+  .btn-success { background: #10b981; color: white; border-color: #059669; font-weight: 600; }
+  .btn-success:hover:not(:disabled) { background: #059669 !important; }
+  .btn-danger { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+  .btn-danger:hover:not(:disabled) { background: #fecaca !important; }
+  .btn-large { padding: 11px 22px; font-size: 15px; }
+  
+  /* Tabs - 兩層 */
+  .tabs-l1 { display: flex; gap: 4px; border-bottom: 2px solid #e2e8f0; margin-bottom: 12px; }
+  .tabs-l1 button { background: transparent; border: none; padding: 10px 20px; font-size: 15px;
+                    font-weight: 600; color: #64748b; border-radius: 0; border-bottom: 3px solid transparent;
+                    margin-bottom: -2px; }
+  .tabs-l1 button.active { color: #7c3aed; border-bottom-color: #7c3aed; }
+  .tabs-l1 button:hover:not(.active) { color: #0f172a; }
+  
+  .tabs-l2 { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; padding: 4px; 
+             background: #f1f5f9; border-radius: 8px; }
+  .tabs-l2 button { background: transparent; border: 1px solid transparent; padding: 6px 14px;
+                    font-size: 13px; font-weight: 500; color: #475569; border-radius: 6px; }
+  .tabs-l2 button.active { background: white; color: #0d9488; border-color: #ccfbf1; font-weight: 600;
+                           box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  
+  /* Site cards */
+  .sites-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .sites-toolbar input[type="text"] { flex: 1; min-width: 200px; }
+  .site-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 10px;
+               background: #fafbfc; }
+  .site-card.new { background: #ecfdf5; border-color: #6ee7b7; }
+  .site-card.deleted { background: #fee2e2; border-color: #fca5a5; opacity: 0.6; }
+  .site-card.deleted * { text-decoration: line-through; }
+  .site-card-header { display: flex; align-items: center; justify-content: space-between;
+                      gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed #e2e8f0; }
+  .site-card-title { font-weight: 600; font-size: 14px; flex: 1; }
+  .site-card .grid { display: grid; gap: 8px; }
+  .site-card .grid-1 { grid-template-columns: 1fr; }
+  .site-card .grid-2 { grid-template-columns: 1fr 1fr; }
+  .site-card .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .site-card .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  @media (max-width: 700px) { 
+    .site-card .grid-2, .site-card .grid-3, .site-card .grid-4 { grid-template-columns: 1fr; } 
+  }
+  .site-card .main-field { background: #fffbeb; padding: 8px; border-radius: 6px; border: 1px solid #fde68a; }
+  .site-card .main-field label { color: #92400e; font-weight: 700; }
+  
+  /* 審查欄位(textarea + 快速插入)*/
+  .review-field { position: relative; }
+  .review-field .quick-buttons { display: flex; gap: 3px; margin-top: 3px; }
+  .review-field .quick-buttons button { 
+    flex: 1; padding: 4px 8px; font-size: 13px; font-weight: 600;
+    background: white; border: 1px solid #e2e8f0; color: #475569; border-radius: 4px;
+  }
+  .review-field .quick-buttons button:hover { background: #f0fdfa; border-color: #5eead4; color: #0d9488; }
+  
+  /* Status badge */
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px;
+                  font-size: 11px; font-weight: 600; }
+  .status-new { background: #d1fae5; color: #047857; }
+  .status-deleted { background: #fee2e2; color: #991b1b; }
+  .status-modified { background: #fef3c7; color: #92400e; }
+  
+  /* Submit area */
+  .submit-area { background: white; border-radius: 12px; padding: 24px;
+                 box-shadow: 0 1px 3px rgba(0,0,0,0.06); text-align: center; }
+  .submit-area .confirm { display: flex; align-items: center; justify-content: center; gap: 8px;
+                          margin-bottom: 16px; font-size: 14px; }
+  .submit-area .confirm input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+  
+  /* Empty */
+  .empty { text-align: center; padding: 32px; color: #94a3b8; }
+  .footer { color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px; padding: 16px; }
+  
+  /* Sub-section */
+  .subsection-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;
+                      letter-spacing: 0.06em; margin: 12px 0 6px; padding-top: 8px; 
+                      border-top: 1px dashed #e2e8f0; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- ============ Header ============ -->
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+    <span style="font-size:28px">📋</span>
+    <div>
+      <h1>__PERIOD__ 月報填報</h1>
+      <div class="meta">
+        <span class="badge">__PERIOD_LABEL__</span>
+        農田水利署 · 水域型農業綠能 管制考核計畫
+      </div>
+    </div>
+  </div>
+  <div class="meta" style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0">
+    快照日期:__SNAPSHOT_DATE__　│　資料來源:__SNAPSHOT_SOURCE__
+  </div>
+</div>
+
+<!-- ============ Step 1: 基本資料 ============ -->
+<div class="card" id="step1">
+  <h2>👤 第一步:基本資料</h2>
+  <p class="subtitle">請先選擇您的管理處,並填入填報人資訊</p>
+  
+  <div class="form-row">
+    <div>
+      <label>管理處<span class="req">*</span></label>
+      <select id="mgmt-select" onchange="onMgmtChange()">
+        <option value="">-- 請選擇 --</option>
+        <option value="桃園">桃園管理處</option>
+        <option value="石門">石門管理處</option>
+        <option value="新竹">新竹管理處</option>
+        <option value="苗栗">苗栗管理處</option>
+        <option value="臺中">臺中管理處</option>
+        <option value="南投">南投管理處</option>
+        <option value="彰化">彰化管理處</option>
+        <option value="雲林">雲林管理處</option>
+        <option value="嘉南">嘉南管理處</option>
+        <option value="高雄">高雄管理處</option>
+        <option value="屏東">屏東管理處</option>
+        <option value="宜蘭">宜蘭管理處</option>
+        <option value="花蓮">花蓮管理處</option>
+        <option value="臺東">臺東管理處</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="form-row cols-2">
+    <div>
+      <label>填報人姓名<span class="req">*</span></label>
+      <input type="text" id="filler-name" placeholder="例:王大明">
+    </div>
+    <div>
+      <label>聯絡電話</label>
+      <input type="tel" id="filler-phone" placeholder="例:0912-345-678">
+    </div>
+  </div>
+</div>
+
+<!-- ============ Step 2: 案場資料(選了管理處才出現)============ -->
+<div id="step2" style="display:none">
+  <div class="card">
+    <!-- 第一層 Tab -->
+    <div class="tabs-l1">
+      <button id="tab-solar" class="active" onclick="switchCategory('solar')">
+        ☀️ 太陽光電 <span id="tab-solar-count" style="color:#94a3b8;font-weight:400;font-size:12px;margin-left:4px"></span>
+      </button>
+      <button id="tab-hydro" onclick="switchCategory('hydro')">
+        💧 小水力 <span id="tab-hydro-count" style="color:#94a3b8;font-weight:400;font-size:12px;margin-left:4px"></span>
+      </button>
+    </div>
+    
+    <!-- 太陽光電 content -->
+    <div id="content-solar">
+      <div class="sites-toolbar">
+        <input type="text" id="solar-search" placeholder="🔍 搜尋案場名稱或廠商..." oninput="renderSites('solar_addendum')">
+        <button onclick="addSite('solar_addendum')">+ 新增太陽光電案場</button>
+      </div>
+      <div id="list-solar_addendum"></div>
+    </div>
+    
+    <!-- 小水力 content(內含 4 個子分頁)-->
+    <div id="content-hydro" style="display:none">
+      <!-- 第二層 Tab -->
+      <div class="tabs-l2">
+        <button id="subtab-tender" class="active" onclick="switchHydroSubtab('hydro_tender')">
+          🏷️ 招標案 <span id="subtab-tender-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+        <button id="subtab-test" onclick="switchHydroSubtab('hydro_test')">
+          🧪 測試案 <span id="subtab-test-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+        <button id="subtab-potential" onclick="switchHydroSubtab('hydro_potential')">
+          ✨ 潛力案場 <span id="subtab-potential-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+        <button id="subtab-inquiry" onclick="switchHydroSubtab('hydro_inquiry')">
+          📞 洽詢紀錄 <span id="subtab-inquiry-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+      </div>
+      
+      <div id="sub-tender">
+        <div class="sites-toolbar">
+          <input type="text" id="tender-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_tender')">
+          <button onclick="addSite('hydro_tender')">+ 新增招標案</button>
+        </div>
+        <div id="list-hydro_tender"></div>
+      </div>
+      
+      <div id="sub-test" style="display:none">
+        <div class="sites-toolbar">
+          <input type="text" id="test-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_test')">
+          <button onclick="addSite('hydro_test')">+ 新增測試案</button>
+        </div>
+        <div id="list-hydro_test"></div>
+      </div>
+      
+      <div id="sub-potential" style="display:none">
+        <div class="sites-toolbar">
+          <input type="text" id="potential-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_potential')">
+          <button onclick="addSite('hydro_potential')">+ 新增潛力案場</button>
+        </div>
+        <div id="list-hydro_potential"></div>
+      </div>
+      
+      <div id="sub-inquiry" style="display:none">
+        <div class="sites-toolbar">
+          <input type="text" id="inquiry-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_inquiry')">
+          <button onclick="addSite('hydro_inquiry')">+ 新增洽詢紀錄</button>
+        </div>
+        <div id="list-hydro_inquiry"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Step 3: 提交 ============ -->
+<div id="step3" class="submit-area" style="display:none">
+  <h2 style="margin:0 0 12px">📤 第三步:提交填報</h2>
+  <p style="color:#475569;margin:0 0 16px">確認所有資料無誤後,點下方按鈕下載填報 Excel,上傳至指定雲端資料夾。</p>
+  
+  <div class="confirm">
+    <input type="checkbox" id="confirm-check" onchange="onConfirmChange()">
+    <label for="confirm-check" style="margin:0;cursor:pointer">我已檢查所有案場資料無誤,可以下載填報檔</label>
+  </div>
+  
+  <button id="submit-btn" class="btn-success btn-large" onclick="downloadExcel()" disabled>
+    📥 下載填報 Excel
+  </button>
+  
+  <p style="margin-top:16px;font-size:13px;color:#64748b">
+    下載後請依現有作業流程,上傳至指定雲端資料夾
+  </p>
+</div>
+
+<div class="footer">
+  農田水利署 · 水域型農業綠能設置綠能設施管制考核計畫<br>
+  期別:__PERIOD__　│　產生時間:__CREATED_AT__
+</div>
+
+</div>
+
+<!-- 快照資料 -->
+__SNAPSHOT_SCRIPT_TAG_OPEN__type="application/json" id="snapshot-data">__SNAPSHOT_JSON____SNAPSHOT_SCRIPT_TAG_CLOSE__
+__SNAPSHOT_SCRIPT_TAG_OPEN__type="application/json" id="snapshot-metadata">__METADATA_JSON____SNAPSHOT_SCRIPT_TAG_CLOSE__
+
+<script>
+// =============================================================
+// 月報填報頁面邏輯(Stage C - 5 個 sheet 完整版)
+// =============================================================
+
+const SNAPSHOT = JSON.parse(document.getElementById('snapshot-data').textContent);
+const METADATA = JSON.parse(document.getElementById('snapshot-metadata').textContent);
+
+// 太陽光電「案場進度」可能的值
+const SOLAR_PROGRESS_OPTIONS = ['申設中', '待施工', '規劃推動', '已併網-混合', '已併網'];
+// 太陽光電「目前階段」可能的值
+const SOLAR_STAGE_OPTIONS = ['土地容許', '施工階段', '併聯審查', '已解約', '尚未送件', '已併網', '併聯審查(未送)', '電業籌設'];
+// 洽詢方式
+const INQUIRY_METHODS = ['電話', '拜訪', '來函', '會勘', '其他'];
+// 洽詢類型
+const INQUIRY_TYPES = ['測試', '招標', '其他'];
+// 11 個審查欄位 key
+const REVIEW_FIELDS = [
+  { key: 'feeder', label: '饋線保留' },
+  { key: 'internal_review', label: '管理處內部審查' },
+  { key: 'taipower_review', label: '台電併聯審查' },
+  { key: 'water_right', label: '水權申請' },
+  { key: 'water_structure', label: '水利建造物申請' },
+  { key: 'soil_conservation', label: '水保計畫申請' },
+  { key: 'land_permit', label: '土地容許(含農業變更)' },
+  { key: 'electric_setup', label: '電業籌設' },
+  { key: 'consent_filed', label: '同意備案' },
+  { key: 'briefing', label: '說明會' },
+  { key: 'construction_permit', label: '施工許可' }
+];
+
+// 全域狀態
+const state = {
+  mgmt: '',
+  fillerName: '',
+  fillerPhone: '',
+  category: 'solar',        // 'solar' or 'hydro'
+  hydroSubtab: 'hydro_tender',
+  data: {
+    solar_addendum: [],
+    hydro_tender: [],
+    hydro_test: [],
+    hydro_potential: [],
+    hydro_inquiry: []
+  }
+};
+
+let _newIdCounter = 0;
+function nextNewId() { _newIdCounter++; return 'NEW_' + String(_newIdCounter).padStart(3, '0'); }
+
+function htmlEscape(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+}
+
+function isModified(s) {
+  if (s._new || s._deleted) return false;
+  const current = { ...s };
+  delete current._kind; delete current._idx; delete current._id;
+  delete current._new; delete current._deleted; delete current._original;
+  try {
+    return JSON.stringify(current) !== s._original;
+  } catch(e) { return false; }
+}
+
+// 管理處改變 → 載入該處 5 種資料
+function onMgmtChange() {
+  const sel = document.getElementById('mgmt-select');
+  const mgmt = sel.value;
+  state.mgmt = mgmt;
+  
+  if (!mgmt) {
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('step3').style.display = 'none';
+    return;
+  }
+  
+  // 從 snapshot 撈出該處的所有資料 - 注意 mgmt 名稱可能有「台中/臺中」差異,做寬鬆比對
+  const mgmtMatch = (a, b) => {
+    if (!a || !b) return false;
+    const norm = s => s.replace(/^台/, '臺');  // 統一用「臺」
+    return norm(a) === norm(b);
+  };
+  
+  ['solar_addendum', 'hydro_tender', 'hydro_test', 'hydro_potential', 'hydro_inquiry'].forEach(key => {
+    state.data[key] = (SNAPSHOT[key] || []).filter(s => mgmtMatch(s.mgmt, mgmt)).map((s, i) => ({
+      ...s,
+      _idx: i,
+      _id: key + '_' + i,
+      _new: false,
+      _deleted: false,
+      _original: JSON.stringify(s)
+    }));
+  });
+  
+  document.getElementById('step2').style.display = '';
+  document.getElementById('step3').style.display = '';
+  
+  // 預設顯示太陽光電
+  switchCategory('solar');
+}
+
+// 切換 L1 Tab(太陽光電 / 小水力)
+function switchCategory(cat) {
+  state.category = cat;
+  document.getElementById('tab-solar').classList.toggle('active', cat === 'solar');
+  document.getElementById('tab-hydro').classList.toggle('active', cat === 'hydro');
+  document.getElementById('content-solar').style.display = cat === 'solar' ? '' : 'none';
+  document.getElementById('content-hydro').style.display = cat === 'hydro' ? '' : 'none';
+  renderAll();
+}
+
+// 切換 L2 子分頁(招標/測試/潛力/洽詢)
+function switchHydroSubtab(key) {
+  state.hydroSubtab = key;
+  const map = { hydro_tender: 'tender', hydro_test: 'test', hydro_potential: 'potential', hydro_inquiry: 'inquiry' };
+  Object.entries(map).forEach(([k, suffix]) => {
+    document.getElementById('subtab-' + suffix).classList.toggle('active', k === key);
+    document.getElementById('sub-' + suffix).style.display = k === key ? '' : 'none';
+  });
+  renderSites(key);
+}
+
+// 重渲染所有
+function renderAll() {
+  ['solar_addendum', 'hydro_tender', 'hydro_test', 'hydro_potential', 'hydro_inquiry'].forEach(renderSites);
+  updateCounts();
+}
+
+function updateCounts() {
+  const solarTotal = state.data.solar_addendum.filter(s => !s._deleted).length;
+  const hydroTotal = state.data.hydro_tender.filter(s=>!s._deleted).length + 
+                     state.data.hydro_test.filter(s=>!s._deleted).length + 
+                     state.data.hydro_potential.filter(s=>!s._deleted).length + 
+                     state.data.hydro_inquiry.filter(s=>!s._deleted).length;
+  document.getElementById('tab-solar-count').textContent = '(' + solarTotal + ')';
+  document.getElementById('tab-hydro-count').textContent = '(' + hydroTotal + ')';
+  document.getElementById('subtab-tender-count').textContent = state.data.hydro_tender.filter(s=>!s._deleted).length;
+  document.getElementById('subtab-test-count').textContent = state.data.hydro_test.filter(s=>!s._deleted).length;
+  document.getElementById('subtab-potential-count').textContent = state.data.hydro_potential.filter(s=>!s._deleted).length;
+  document.getElementById('subtab-inquiry-count').textContent = state.data.hydro_inquiry.filter(s=>!s._deleted).length;
+}
+
+// 編輯欄位
+function updateField(key, id, field, value) {
+  const arr = state.data[key];
+  const s = arr.find(x => x._id === id);
+  if (!s) return;
+  // 數字欄位轉型
+  if (['capacity_mw', 'capacity_kw', 'site_count', 'unit_count', 'unit_capacity_kw', 'estimated_capacity_kw'].includes(field)) {
+    s[field] = value === '' ? null : parseFloat(value);
+  } else {
+    s[field] = value;
+  }
+  // 更新計數(可能改了刪除狀態以外的)
+  updateCounts();
+}
+
+// 切換刪除狀態
+function toggleDelete(key, id) {
+  const arr = state.data[key];
+  const idx = arr.findIndex(x => x._id === id);
+  if (idx < 0) return;
+  const s = arr[idx];
+  if (s._new) {
+    arr.splice(idx, 1);
+  } else {
+    s._deleted = !s._deleted;
+  }
+  renderSites(key);
+  updateCounts();
+}
+
+// 11 個審查欄位的快速插入
+function insertSymbol(key, id, field, symbol) {
+  updateField(key, id, field, symbol);
+  // 更新對應 textarea
+  const ta = document.querySelector(`textarea[data-card="${id}"][data-field="${field}"]`);
+  if (ta) ta.value = symbol;
+  // 重渲染這張卡(badge 更新)
+  renderSites(key);
+}
+
+// 新增案場
+function addSite(key) {
+  const templates = {
+    solar_addendum: {
+      contract_name: '', site_progress: '', vendor: '', site_name: '', site_count: null,
+      capacity_mw: null, current_stage: '', sign_date: '', install_deadline: '',
+      expire_status: '', current_operation: '', difficulty: '', team_suggestion: '', note: ''
+    },
+    hydro_tender: {
+      county: '', township: '', land_section: '', land_no: '', contract_name: '', case_name: '',
+      capacity_kw: null, unit_count: null, unit_capacity_kw: null,
+      tender_period: '', sign_date: '',
+      feeder: '', internal_review: '', taipower_review: '', water_right: '', water_structure: '',
+      soil_conservation: '', land_permit: '', electric_setup: '', consent_filed: '',
+      briefing: '', construction_permit: '',
+      estimated_completion: '', vendor: '', operation: '', difficulty: '', planned_next: '', note: ''
+    },
+    hydro_test: {
+      county: '', township: '', land_section: '', land_no: '', channel_name: '',
+      capacity_kw: null, pile_no: '', unit_count: null, unit_capacity_kw: null,
+      test_apply_from: '', test_apply_to: '', sign_date: '',
+      internal_review: '', actual_test_date: '', vendor: '', operation: '',
+      planned_next: '', note: ''
+    },
+    hydro_potential: {
+      county: '', township: '', land_section: '', land_no: '', channel_name: '',
+      pile_no: '', estimated_capacity_kw: null, note: '', progress: '', version_type: ''
+    },
+    hydro_inquiry: {
+      inquiry_date: '', inquiry_unit: '', name: '', inquiry_method: '', inquiry_type: '',
+      inquiry_content: '', handling_status: '', closure_date: ''
+    }
+  };
+  
+  state.data[key].push({
+    _kind: key, _idx: -1, _id: nextNewId(), _new: true, _deleted: false, _original: '',
+    mgmt: state.mgmt,
+    ...templates[key]
+  });
+  renderSites(key);
+  updateCounts();
+  // 滾到新案場
+  setTimeout(() => {
+    const cards = document.querySelectorAll('#list-' + key + ' .site-card');
+    const last = cards[cards.length - 1];
+    if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 50);
+}
+
+// 通用 renderSites 入口
+function renderSites(key) {
+  const container = document.getElementById('list-' + key);
+  if (!container) return;
+  
+  const searchInputId = {
+    solar_addendum: 'solar-search',
+    hydro_tender: 'tender-search',
+    hydro_test: 'test-search',
+    hydro_potential: 'potential-search',
+    hydro_inquiry: 'inquiry-search'
+  }[key];
+  const search = (document.getElementById(searchInputId)?.value || '').toLowerCase();
+  
+  let filtered = state.data[key];
+  if (search) {
+    filtered = filtered.filter(s => {
+      // 不同類型 sheet 用不同欄位搜尋
+      const blob = [
+        s.site_name, s.case_name, s.channel_name, s.contract_name, 
+        s.vendor, s.inquiry_unit, s.inquiry_content
+      ].filter(Boolean).join(' ').toLowerCase();
+      return blob.includes(search);
+    });
+  }
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty">' + (search ? '沒有符合搜尋的案場' : '此管理處目前沒有資料,可點上方「+ 新增」按鈕新增') + '</div>';
+    return;
+  }
+  
+  container.innerHTML = filtered.map(s => renderCard(key, s)).join('');
+}
+
+// 依 key 分派到不同的卡片渲染函式
+function renderCard(key, s) {
+  let badge = '';
+  if (s._new) badge = '<span class="status-badge status-new">+ 新增</span>';
+  else if (s._deleted) badge = '<span class="status-badge status-deleted">已刪除</span>';
+  else if (isModified(s)) badge = '<span class="status-badge status-modified">已修改</span>';
+  
+  const titleField = {
+    solar_addendum: s.site_name || s.contract_name,
+    hydro_tender: s.case_name || s.contract_name,
+    hydro_test: s.channel_name,
+    hydro_potential: s.channel_name,
+    hydro_inquiry: s.inquiry_unit
+  }[key] || '(尚未命名)';
+  
+  const cardOpen = `<div class="site-card ${s._new?'new':''}${s._deleted?' deleted':''}" data-id="${s._id}">
+    <div class="site-card-header">
+      <div class="site-card-title">${htmlEscape(titleField)} ${badge}</div>
+      <button class="btn-danger" onclick="toggleDelete('${key}', '${s._id}')">${s._deleted?'↺ 還原':'🗑 刪除'}</button>
+    </div>`;
+  const cardClose = `</div>`;
+  
+  if (s._deleted) return cardOpen + cardClose;
+  
+  let body = '';
+  if (key === 'solar_addendum')      body = renderSolarFields(s);
+  else if (key === 'hydro_tender')   body = renderTenderFields(s);
+  else if (key === 'hydro_test')     body = renderTestFields(s);
+  else if (key === 'hydro_potential')body = renderPotentialFields(s);
+  else if (key === 'hydro_inquiry')  body = renderInquiryFields(s);
+  
+  return cardOpen + body + cardClose;
+}
+
+// helper: 一般文字欄位
+function inp(key, id, field, value, type) {
+  type = type || 'text';
+  return `<input type="${type}" value="${htmlEscape(value)}" oninput="updateField('${key}','${id}','${field}',this.value)">`;
+}
+function ta(key, id, field, value, rows) {
+  return `<textarea rows="${rows||3}" oninput="updateField('${key}','${id}','${field}',this.value)">${htmlEscape(value)}</textarea>`;
+}
+function sel(key, id, field, value, options) {
+  return `<select onchange="updateField('${key}','${id}','${field}',this.value)">
+    <option value="">(請選擇)</option>
+    ${options.map(o => `<option value="${o}"${value===o?' selected':''}>${o}</option>`).join('')}
+  </select>`;
+}
+
+// 太陽光電(附件一)
+function renderSolarFields(s) {
+  return `
+    <div class="grid grid-1"><div>
+      <label>案場名稱<span class="req">*</span></label>
+      ${inp('solar_addendum', s._id, 'site_name', s.site_name)}
+    </div></div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>契約名稱</label>${inp('solar_addendum', s._id, 'contract_name', s.contract_name)}</div>
+      <div><label>設置廠商</label>${inp('solar_addendum', s._id, 'vendor', s.vendor)}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>案場進度</label>${sel('solar_addendum', s._id, 'site_progress', s.site_progress, SOLAR_PROGRESS_OPTIONS)}</div>
+      <div><label>目前階段</label>${sel('solar_addendum', s._id, 'current_stage', s.current_stage, SOLAR_STAGE_OPTIONS)}</div>
+      <div><label>裝置容量(MW)</label>${inp('solar_addendum', s._id, 'capacity_mw', s.capacity_mw, 'number')}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>案場數量</label>${inp('solar_addendum', s._id, 'site_count', s.site_count, 'number')}</div>
+      <div><label>簽約日期</label>${inp('solar_addendum', s._id, 'sign_date', s.sign_date)}</div>
+      <div><label>設置期限</label>${inp('solar_addendum', s._id, 'install_deadline', s.install_deadline)}</div>
+    </div>
+    <div class="main-field" style="margin-top:8px">
+      <label>📝 目前辦理情況(主要更新欄位)</label>
+      ${ta('solar_addendum', s._id, 'current_operation', s.current_operation, 5)}
+    </div>
+    <div class="grid grid-1" style="margin-top:8px">
+      <div><label>困難點說明</label>${ta('solar_addendum', s._id, 'difficulty', s.difficulty, 2)}</div>
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>專案團隊處理建議</label>${ta('solar_addendum', s._id, 'team_suggestion', s.team_suggestion, 2)}</div>
+      <div><label>備註</label>${ta('solar_addendum', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 招標案
+function renderTenderFields(s) {
+  // 11 個審查欄位
+  const reviewBlocks = REVIEW_FIELDS.map(rf => `
+    <div class="review-field">
+      <label>${rf.label}</label>
+      <textarea rows="2" data-card="${s._id}" data-field="${rf.key}" 
+        oninput="updateField('hydro_tender','${s._id}','${rf.key}',this.value)">${htmlEscape(s[rf.key]||'')}</textarea>
+      <div class="quick-buttons">
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','○')">○ 已通過</button>
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','X')">X 未辦</button>
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','Δ')">Δ 進行中</button>
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','-')">- 不適用</button>
+      </div>
+    </div>
+  `).join('');
+  
+  return `
+    <div class="grid grid-1"><div>
+      <label>案名<span class="req">*</span></label>${inp('hydro_tender', s._id, 'case_name', s.case_name)}
+    </div></div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>契約名稱</label>${inp('hydro_tender', s._id, 'contract_name', s.contract_name)}</div>
+      <div><label>廠商</label>${inp('hydro_tender', s._id, 'vendor', s.vendor)}</div>
+    </div>
+    
+    <div class="subsection-title">地點資訊</div>
+    <div class="grid grid-2">
+      <div><label>縣市</label>${inp('hydro_tender', s._id, 'county', s.county)}</div>
+      <div><label>鄉鎮市區</label>${inp('hydro_tender', s._id, 'township', s.township)}</div>
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>地段</label>${inp('hydro_tender', s._id, 'land_section', s.land_section)}</div>
+      <div><label>地號</label>${inp('hydro_tender', s._id, 'land_no', s.land_no)}</div>
+    </div>
+    
+    <div class="subsection-title">設備規格</div>
+    <div class="grid grid-3">
+      <div><label>裝置容量(kW)</label>${inp('hydro_tender', s._id, 'capacity_kw', s.capacity_kw, 'number')}</div>
+      <div><label>機組總數量(組)</label>${inp('hydro_tender', s._id, 'unit_count', s.unit_count, 'number')}</div>
+      <div><label>每組機組裝置容量(kW)</label>${inp('hydro_tender', s._id, 'unit_capacity_kw', s.unit_capacity_kw, 'number')}</div>
+    </div>
+    
+    <div class="subsection-title">時程</div>
+    <div class="grid grid-3">
+      <div><label>招商期間</label>${ta('hydro_tender', s._id, 'tender_period', s.tender_period, 2)}</div>
+      <div><label>簽約日期</label>${inp('hydro_tender', s._id, 'sign_date', s.sign_date)}</div>
+      <div><label>預計完工日期</label>${inp('hydro_tender', s._id, 'estimated_completion', s.estimated_completion)}</div>
+    </div>
+    
+    <div class="subsection-title">11 項審查進度(點按鈕快速插入 ○ / X / Δ / - 或自由輸入)</div>
+    <div class="grid grid-2" style="gap:14px">
+      ${reviewBlocks}
+    </div>
+    
+    <div class="main-field" style="margin-top:14px">
+      <label>📝 辦理情形(主要更新欄位)</label>
+      ${ta('hydro_tender', s._id, 'operation', s.operation, 5)}
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>遭遇困難事項</label>${ta('hydro_tender', s._id, 'difficulty', s.difficulty, 2)}</div>
+      <div><label>近期預計規劃辦理事項</label>${ta('hydro_tender', s._id, 'planned_next', s.planned_next, 2)}</div>
+    </div>
+    <div class="grid grid-1" style="margin-top:8px">
+      <div><label>備註</label>${ta('hydro_tender', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 測試案
+function renderTestFields(s) {
+  return `
+    <div class="grid grid-1"><div>
+      <label>圳路名稱<span class="req">*</span></label>${inp('hydro_test', s._id, 'channel_name', s.channel_name)}
+    </div></div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>廠商</label>${inp('hydro_test', s._id, 'vendor', s.vendor)}</div>
+      <div><label>樁號</label>${inp('hydro_test', s._id, 'pile_no', s.pile_no)}</div>
+    </div>
+    
+    <div class="subsection-title">地點</div>
+    <div class="grid grid-4">
+      <div><label>縣市</label>${inp('hydro_test', s._id, 'county', s.county)}</div>
+      <div><label>鄉鎮市區</label>${inp('hydro_test', s._id, 'township', s.township)}</div>
+      <div><label>地段</label>${inp('hydro_test', s._id, 'land_section', s.land_section)}</div>
+      <div><label>地號</label>${inp('hydro_test', s._id, 'land_no', s.land_no)}</div>
+    </div>
+    
+    <div class="subsection-title">設備</div>
+    <div class="grid grid-3">
+      <div><label>裝置容量(kW)</label>${inp('hydro_test', s._id, 'capacity_kw', s.capacity_kw, 'number')}</div>
+      <div><label>機組總數量(組)</label>${inp('hydro_test', s._id, 'unit_count', s.unit_count, 'number')}</div>
+      <div><label>每組機組裝置容量(kW)</label>${inp('hydro_test', s._id, 'unit_capacity_kw', s.unit_capacity_kw, 'number')}</div>
+    </div>
+    
+    <div class="subsection-title">時程</div>
+    <div class="grid grid-4">
+      <div><label>申請測試日期-起</label>${inp('hydro_test', s._id, 'test_apply_from', s.test_apply_from)}</div>
+      <div><label>申請測試日期-迄</label>${inp('hydro_test', s._id, 'test_apply_to', s.test_apply_to)}</div>
+      <div><label>簽約日期</label>${inp('hydro_test', s._id, 'sign_date', s.sign_date)}</div>
+      <div><label>實際完成測試日期</label>${inp('hydro_test', s._id, 'actual_test_date', s.actual_test_date)}</div>
+    </div>
+    
+    <div class="review-field" style="margin-top:8px">
+      <label>管理處內部審查(測試計畫)</label>
+      <textarea rows="2" data-card="${s._id}" data-field="internal_review" 
+        oninput="updateField('hydro_test','${s._id}','internal_review',this.value)">${htmlEscape(s.internal_review||'')}</textarea>
+      <div class="quick-buttons">
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','○')">○ 已通過</button>
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','X')">X 未辦</button>
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','Δ')">Δ 進行中</button>
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','-')">- 不適用</button>
+      </div>
+    </div>
+    
+    <div class="main-field" style="margin-top:8px">
+      <label>📝 辦理情形(主要更新欄位)</label>
+      ${ta('hydro_test', s._id, 'operation', s.operation, 5)}
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>近期預計規劃辦理事項</label>${ta('hydro_test', s._id, 'planned_next', s.planned_next, 2)}</div>
+      <div><label>備註</label>${ta('hydro_test', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 潛力案場
+function renderPotentialFields(s) {
+  return `
+    <div class="grid grid-1"><div>
+      <label>圳路名稱<span class="req">*</span></label>${inp('hydro_potential', s._id, 'channel_name', s.channel_name)}
+    </div></div>
+    <div class="grid grid-4" style="margin-top:8px">
+      <div><label>縣市</label>${inp('hydro_potential', s._id, 'county', s.county)}</div>
+      <div><label>鄉鎮市區</label>${inp('hydro_potential', s._id, 'township', s.township)}</div>
+      <div><label>地段</label>${inp('hydro_potential', s._id, 'land_section', s.land_section)}</div>
+      <div><label>地號</label>${inp('hydro_potential', s._id, 'land_no', s.land_no)}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>樁號</label>${inp('hydro_potential', s._id, 'pile_no', s.pile_no)}</div>
+      <div><label>預估設置容量(kW)</label>${inp('hydro_potential', s._id, 'estimated_capacity_kw', s.estimated_capacity_kw, 'number')}</div>
+      <div><label>版本類型</label>${sel('hydro_potential', s._id, 'version_type', s.version_type, ['對內,尚需評估','對外'])}</div>
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>進度</label>${inp('hydro_potential', s._id, 'progress', s.progress)}</div>
+      <div><label>備註</label>${ta('hydro_potential', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 洽詢紀錄
+function renderInquiryFields(s) {
+  return `
+    <div class="grid grid-3"><div>
+      <label>洽詢日期<span class="req">*</span></label>${inp('hydro_inquiry', s._id, 'inquiry_date', s.inquiry_date)}
+    </div>
+    <div><label>結案日期</label>${inp('hydro_inquiry', s._id, 'closure_date', s.closure_date)}</div>
+    <div><label>類型</label>${sel('hydro_inquiry', s._id, 'inquiry_type', s.inquiry_type, INQUIRY_TYPES)}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>洽詢單位</label>${inp('hydro_inquiry', s._id, 'inquiry_unit', s.inquiry_unit)}</div>
+      <div><label>姓名</label>${inp('hydro_inquiry', s._id, 'name', s.name)}</div>
+      <div><label>洽詢方式</label>${sel('hydro_inquiry', s._id, 'inquiry_method', s.inquiry_method, INQUIRY_METHODS)}</div>
+    </div>
+    <div class="main-field" style="margin-top:8px">
+      <label>📝 洽詢內容(簡要說明)</label>
+      ${ta('hydro_inquiry', s._id, 'inquiry_content', s.inquiry_content, 3)}
+    </div>
+    <div class="grid grid-1" style="margin-top:8px">
+      <div><label>處理情形</label>${ta('hydro_inquiry', s._id, 'handling_status', s.handling_status, 3)}</div>
+    </div>
+  `;
+}
+
+// 確認框
+function onConfirmChange() {
+  document.getElementById('submit-btn').disabled = !document.getElementById('confirm-check').checked;
+}
+
+// 監聽填報人 input
+document.addEventListener('input', e => {
+  if (e.target.id === 'filler-name') state.fillerName = e.target.value;
+  if (e.target.id === 'filler-phone') state.fillerPhone = e.target.value;
+});
+
+// 下載 Excel
+function downloadExcel() {
+  if (!state.mgmt) { alert('請先選擇管理處'); return; }
+  if (!state.fillerName.trim()) { alert('請填寫填報人姓名'); return; }
+  
+  const now = new Date();
+  const tsStr = now.getFullYear() + '/' + 
+    String(now.getMonth()+1).padStart(2,'0') + '/' + 
+    String(now.getDate()).padStart(2,'0') + ' ' +
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0');
+  
+  const wb = XLSX.utils.book_new();
+  
+  // === Sheet 0: Metadata ===
+  const metaRows = [
+    ['月報填報 - Metadata(本表為系統匯入用,請勿手動編輯)'],
+    [],
+    ['欄位', '內容'],
+    ['期別', METADATA.period],
+    ['管理處', state.mgmt],
+    ['填報人姓名', state.fillerName],
+    ['聯絡電話', state.fillerPhone],
+    ['填報時間', tsStr],
+    ['快照日期', METADATA.snapshot_date],
+    ['快照來源', METADATA.snapshot_source],
+    [],
+    ['資料統計', ''],
+    ['太陽光電(附件一)', state.data.solar_addendum.filter(s=>!s._deleted).length],
+    ['  其中新增', state.data.solar_addendum.filter(s=>s._new&&!s._deleted).length],
+    ['  其中標記刪除', state.data.solar_addendum.filter(s=>s._deleted).length],
+    ['小水力-招標案', state.data.hydro_tender.filter(s=>!s._deleted).length],
+    ['  其中新增', state.data.hydro_tender.filter(s=>s._new&&!s._deleted).length],
+    ['  其中標記刪除', state.data.hydro_tender.filter(s=>s._deleted).length],
+    ['小水力-測試案', state.data.hydro_test.filter(s=>!s._deleted).length],
+    ['小水力-潛力案場', state.data.hydro_potential.filter(s=>!s._deleted).length],
+    ['小水力-洽詢紀錄', state.data.hydro_inquiry.filter(s=>!s._deleted).length]
+  ];
+  const ws0 = XLSX.utils.aoa_to_sheet(metaRows);
+  ws0['!cols'] = [{ wch: 28 }, { wch: 60 }];
+  XLSX.utils.book_append_sheet(wb, ws0, 'Metadata');
+  
+  // === Sheet 1: 太陽光電(附件一)===
+  const stat = s => s._deleted ? '已刪除' : (s._new ? '新增' : (isModified(s) ? '修改' : '正常'));
+  
+  const solarHeader = ['狀態', '案場ID', '管理處', '契約名稱', '案場進度', '設置廠商', '案場名稱', 
+    '案場數量', '裝置容量(MW)', '目前階段', '簽約日期', '設置期限', '到期狀態',
+    '目前辦理情況', '困難點說明', '專案團隊處理建議', '備註'];
+  const solarRows = [solarHeader].concat(state.data.solar_addendum.map(s => [
+    stat(s), s._id, s.mgmt||'', s.contract_name||'', s.site_progress||'', s.vendor||'', s.site_name||'',
+    s.site_count==null?'':s.site_count, s.capacity_mw==null?'':s.capacity_mw,
+    s.current_stage||'', s.sign_date||'', s.install_deadline||'', s.expire_status||'',
+    s.current_operation||'', s.difficulty||'', s.team_suggestion||'', s.note||''
+  ]));
+  const ws1 = XLSX.utils.aoa_to_sheet(solarRows);
+  ws1['!cols'] = [{wch:8},{wch:22},{wch:8},{wch:30},{wch:14},{wch:22},{wch:30},{wch:8},{wch:10},
+    {wch:16},{wch:12},{wch:18},{wch:10},{wch:60},{wch:30},{wch:30},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws1, '太陽光電');
+  
+  // === Sheet 2: 招標案 ===
+  const tenderHeader = ['狀態','案場ID','管理處','縣市','鄉鎮市區','地段','地號','契約名稱','案名',
+    '裝置容量(kW)','機組總數量','每組機組裝置容量(kW)','招商期間','簽約日期',
+    '饋線保留','管理處內部審查','台電併聯審查','水權申請','水利建造物申請','水保計畫申請',
+    '土地容許','電業籌設','同意備案','說明會','施工許可',
+    '預計完工日期','廠商','辦理情形','遭遇困難事項','近期預計規劃辦理事項','備註'];
+  const tenderRows = [tenderHeader].concat(state.data.hydro_tender.map(s => [
+    stat(s), s._id, s.mgmt||'', s.county||'', s.township||'', s.land_section||'', s.land_no||'',
+    s.contract_name||'', s.case_name||'',
+    s.capacity_kw==null?'':s.capacity_kw, s.unit_count==null?'':s.unit_count, s.unit_capacity_kw==null?'':s.unit_capacity_kw,
+    s.tender_period||'', s.sign_date||'',
+    s.feeder||'', s.internal_review||'', s.taipower_review||'', s.water_right||'', s.water_structure||'',
+    s.soil_conservation||'', s.land_permit||'', s.electric_setup||'', s.consent_filed||'', s.briefing||'', s.construction_permit||'',
+    s.estimated_completion||'', s.vendor||'', s.operation||'', s.difficulty||'', s.planned_next||'', s.note||''
+  ]));
+  const ws2 = XLSX.utils.aoa_to_sheet(tenderRows);
+  ws2['!cols'] = Array(tenderHeader.length).fill({wch:14});
+  ws2['!cols'][27] = {wch:60}; // 辦理情形
+  XLSX.utils.book_append_sheet(wb, ws2, '招標案');
+  
+  // === Sheet 3: 測試案 ===
+  const testHeader = ['狀態','案場ID','管理處','縣市','鄉鎮市區','地段','地號','圳路名稱',
+    '裝置容量(kW)','樁號','機組總數量','每組機組裝置容量(kW)',
+    '申請測試日期-起','申請測試日期-迄','簽約日期','管理處內部審查','實際完成測試日期',
+    '廠商','辦理情形','近期預計規劃辦理事項','備註'];
+  const testRows = [testHeader].concat(state.data.hydro_test.map(s => [
+    stat(s), s._id, s.mgmt||'', s.county||'', s.township||'', s.land_section||'', s.land_no||'',
+    s.channel_name||'',
+    s.capacity_kw==null?'':s.capacity_kw, s.pile_no||'', s.unit_count==null?'':s.unit_count, s.unit_capacity_kw==null?'':s.unit_capacity_kw,
+    s.test_apply_from||'', s.test_apply_to||'', s.sign_date||'', s.internal_review||'', s.actual_test_date||'',
+    s.vendor||'', s.operation||'', s.planned_next||'', s.note||''
+  ]));
+  const ws3 = XLSX.utils.aoa_to_sheet(testRows);
+  ws3['!cols'] = Array(testHeader.length).fill({wch:14});
+  ws3['!cols'][18] = {wch:60};
+  XLSX.utils.book_append_sheet(wb, ws3, '測試案');
+  
+  // === Sheet 4: 潛力案場 ===
+  const potHeader = ['狀態','案場ID','管理處','縣市','鄉鎮市區','地段','地號',
+    '圳路名稱','樁號','預估設置容量(kW)','備註','進度','版本類型'];
+  const potRows = [potHeader].concat(state.data.hydro_potential.map(s => [
+    stat(s), s._id, s.mgmt||'', s.county||'', s.township||'', s.land_section||'', s.land_no||'',
+    s.channel_name||'', s.pile_no||'', s.estimated_capacity_kw==null?'':s.estimated_capacity_kw,
+    s.note||'', s.progress||'', s.version_type||''
+  ]));
+  const ws4 = XLSX.utils.aoa_to_sheet(potRows);
+  ws4['!cols'] = Array(potHeader.length).fill({wch:14});
+  ws4['!cols'][10] = {wch:40};
+  XLSX.utils.book_append_sheet(wb, ws4, '潛力案場');
+  
+  // === Sheet 5: 洽詢紀錄 ===
+  const inqHeader = ['狀態','案場ID','管理處','洽詢日期','洽詢單位','姓名','洽詢方式',
+    '類型','洽詢內容','處理情形','結案日期'];
+  const inqRows = [inqHeader].concat(state.data.hydro_inquiry.map(s => [
+    stat(s), s._id, s.mgmt||'', s.inquiry_date||'', s.inquiry_unit||'', s.name||'', s.inquiry_method||'',
+    s.inquiry_type||'', s.inquiry_content||'', s.handling_status||'', s.closure_date||''
+  ]));
+  const ws5 = XLSX.utils.aoa_to_sheet(inqRows);
+  ws5['!cols'] = Array(inqHeader.length).fill({wch:14});
+  ws5['!cols'][8] = {wch:50};
+  ws5['!cols'][9] = {wch:50};
+  XLSX.utils.book_append_sheet(wb, ws5, '洽詢紀錄');
+  
+  // 檔名
+  const safeFiller = state.fillerName.replace(/[\\\/:*?"<>|]/g, '_').substring(0, 20);
+  const filename = METADATA.period + '_' + state.mgmt + '_' + safeFiller + '_' + 
+    now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + 
+    String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0') + '.xlsx';
+  
+  XLSX.writeFile(wb, filename);
+  
+  alert('✅ 已下載 ' + filename + '\n\n' +
+    '太陽光電 ' + state.data.solar_addendum.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-招標案 ' + state.data.hydro_tender.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-測試案 ' + state.data.hydro_test.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-潛力案場 ' + state.data.hydro_potential.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-洽詢紀錄 ' + state.data.hydro_inquiry.filter(s=>!s._deleted).length + ' 案\n\n' +
+    '請依現有作業流程,上傳至指定雲端資料夾。');
+}
+
+// 初始化
+document.getElementById('mgmt-select').focus();
+</script>
+
+</body>
+</html>

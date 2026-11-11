@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理處即時填報 · 農田水利署綠能管考</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+         margin: 0; padding: 0; background: #f8fafc; color: #0f172a; line-height: 1.5; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .hidden { display: none !important; }
+
+  /* Login */
+  .login-box { max-width: 420px; margin: 80px auto; background: white; border-radius: 12px;
+               padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .login-box h1 { margin: 0 0 8px; font-size: 22px; }
+  .login-box .subtitle { color: #64748b; font-size: 13px; margin-bottom: 24px; }
+  .login-box label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin: 12px 0 4px; }
+  .login-box input { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+  .login-box input:focus { outline: 2px solid #7c3aed; border-color: #7c3aed; }
+  .login-box button { width: 100%; margin-top: 16px; padding: 11px; background: #7c3aed; color: white;
+                      border: none; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .login-box button:hover { background: #6d28d9; }
+  .login-error { color: #dc2626; font-size: 13px; margin-top: 12px; display: none; }
+
+  /* Header */
+  .header { background: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; justify-content: space-between;
+            align-items: center; flex-wrap: wrap; gap: 12px; }
+  .header h1 { margin: 0; font-size: 20px; }
+  .header .meta { color: #64748b; font-size: 13px; margin-top: 4px; }
+  .badge { display: inline-block; background: #ddd6fe; color: #6d28d9;
+           padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  .badge-admin { background: #fef3c7; color: #92400e; }
+  .btn-logout { padding: 6px 12px; background: white; border: 1px solid #cbd5e1;
+                border-radius: 6px; font-size: 13px; cursor: pointer; }
+  .btn-logout:hover { background: #f1f5f9; }
+
+  /* Toolbar (admin) */
+  .toolbar { background: white; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;
+             box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .toolbar select, .toolbar input { padding: 6px 10px; border: 1px solid #cbd5e1;
+                                    border-radius: 6px; font-size: 13px; }
+  .toolbar button { padding: 6px 12px; background: white; border: 1px solid #cbd5e1;
+                    border-radius: 6px; font-size: 13px; cursor: pointer; }
+  .toolbar button.primary { background: #7c3aed; color: white; border-color: #6d28d9; font-weight: 600; }
+  .toolbar button.primary:hover { background: #6d28d9; }
+  .toolbar button.warn { background: #fef3c7; color: #92400e; border-color: #f59e0b; font-weight: 600; }
+  .toolbar .spacer { flex: 1; }
+  .toolbar .stat { font-size: 13px; color: #475569; }
+  .toolbar .stat strong { color: #0f172a; }
+
+  /* Site cards */
+  .site-list { display: flex; flex-direction: column; gap: 12px; }
+  .site-card { background: white; border-radius: 12px; padding: 16px 20px;
+               box-shadow: 0 1px 3px rgba(0,0,0,0.06); border-left: 4px solid #cbd5e1; }
+  .site-card.dirty { border-left-color: #f59e0b; background: #fffbeb; }
+  .site-card.saved { border-left-color: #10b981; }
+  .site-card h3 { margin: 0 0 6px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .site-meta { color: #64748b; font-size: 12px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .site-meta span strong { color: #334155; }
+  .stage-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .stage-已併網 { background: #d1fae5; color: #065f46; }
+  .stage-施工階段 { background: #dbeafe; color: #1e40af; }
+  .stage-已解約, .stage-已撤案 { background: #fee2e2; color: #991b1b; }
+  .stage-規劃中 { background: #f1f5f9; color: #475569; }
+  .stage-土地容許, .stage-併聯審查, .stage-併聯審查未送, .stage-電業籌設, .stage-尚未送件 { background: #fef3c7; color: #92400e; }
+
+  .form-row { display: grid; gap: 12px; margin-top: 8px; }
+  .form-row.cols-2 { grid-template-columns: 200px 1fr; }
+  @media (max-width: 700px) { .form-row.cols-2 { grid-template-columns: 1fr; } }
+  .form-row label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  .form-row select, .form-row textarea {
+    width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
+    font-size: 13px; font-family: inherit; background: white;
+  }
+  .form-row textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+  .form-row select:focus, .form-row textarea:focus { outline: 2px solid #7c3aed; border-color: #7c3aed; }
+
+  .card-actions { margin-top: 12px; display: flex; gap: 8px; align-items: center; }
+  .btn-save { padding: 7px 16px; background: #10b981; color: white; border: 1px solid #059669;
+              border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-save:hover:not(:disabled) { background: #059669; }
+  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-reset { padding: 7px 12px; background: white; border: 1px solid #cbd5e1;
+               border-radius: 6px; font-size: 13px; cursor: pointer; }
+  .status { font-size: 12px; color: #64748b; }
+  .status.ok { color: #059669; font-weight: 600; }
+
+  /* 本月更新標籤 */
+  .updated-tag { display:inline-block; background:#dbeafe; color:#1e40af; padding:2px 8px;
+                 border-radius:4px; font-size:11px; font-weight:600; }
+
+  /* 月份填報狀況面板（admin） */
+  .month-panel { background:white; border-radius:12px; padding:14px 16px; margin-bottom:16px;
+                 box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+  .month-head { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:10px; font-size:13px; }
+  .month-head select { padding:5px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; }
+  .month-summary { font-size:13px; color:#475569; }
+  .month-summary b.ok { color:#059669; } .month-summary b.todo { color:#dc2626; }
+  .month-hint { font-size:11px; color:#94a3b8; }
+  .month-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:8px; }
+  .mchip { border:1px solid; border-radius:8px; padding:8px 10px; font-size:12px; cursor:pointer;
+           text-align:left; font-family:inherit; line-height:1.5; }
+  .mchip .name { font-weight:700; font-size:13px; display:block; }
+  .mchip.done { border-color:#6ee7b7; background:#ecfdf5; color:#065f46; }
+  .mchip.todo { border-color:#fecaca; background:#fef2f2; color:#991b1b; }
+  .mchip.none { border-color:#e2e8f0; background:#f8fafc; color:#94a3b8; cursor:default; }
+
+  /* Empty / loading */
+  .empty { text-align: center; padding: 48px 20px; color: #94a3b8; font-size: 14px;
+           background: white; border-radius: 12px; }
+
+  /* Modal */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 100;
+                    display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: white; border-radius: 12px; max-width: 700px; width: 100%;
+           max-height: 85vh; overflow-y: auto; padding: 24px; }
+  .modal h2 { margin: 0 0 12px; font-size: 18px; }
+  .modal textarea { width: 100%; min-height: 200px; padding: 10px; border: 1px solid #cbd5e1;
+                    border-radius: 6px; font-family: monospace; font-size: 12px; }
+  .modal-actions { margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px;
+           font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 200;
+           opacity: 0; transform: translateY(20px); transition: all 0.2s; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.ok { background: #10b981; color: white; }
+  .toast.err { background: #dc2626; color: white; }
+</style>
+</head>
+<body>
+
+<!-- ============ Login screen ============ -->
+<div id="login-screen" class="login-box">
+  <h1>管理處即時填報</h1>
+  <p class="subtitle">農田水利署綠能管考 · Firebase 版試做</p>
+  <label>電子郵件</label>
+  <input type="email" id="login-email" placeholder="例：taoyuan@triwra.gov.tw" autocomplete="username">
+  <label>密碼</label>
+  <input type="password" id="login-password" autocomplete="current-password">
+  <button onclick="doLogin()">登入</button>
+  <div class="login-error" id="login-error"></div>
+</div>
+
+<!-- ============ Main app (hidden until login) ============ -->
+<div id="app" class="container hidden">
+  <div class="header">
+    <div>
+      <h1>管理處即時填報</h1>
+      <div class="meta">
+        <span class="badge" id="user-badge">-</span>
+        <span id="user-email">-</span>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">登出</button>
+  </div>
+
+  <div class="toolbar">
+    <span class="stat">案場數：<strong id="stat-total">0</strong></span>
+    <span class="stat">已更新：<strong id="stat-updated" style="color:#059669">0</strong></span>
+    <input type="text" id="search-input" placeholder="🔍 搜尋案場名稱或廠商" style="min-width:200px" oninput="renderSites()">
+    <select id="mgmt-filter" onchange="renderSites()" class="hidden">
+      <option value="">（全部管理處）</option>
+    </select>
+    <select id="stage-filter" onchange="renderSites()">
+      <option value="">（全部案場進度）</option>
+    </select>
+    <div class="spacer"></div>
+    <button id="add-site-btn" onclick="openAddSiteModal()" style="background:#0284c7;color:white;border-color:#0369a1;font-weight:600">➕ 新增案場</button>
+    <button id="admin-export-btn" class="hidden" onclick="doExport()" style="background:#059669;color:white;border-color:#047857;font-weight:600">📤 匯出月報 Excel</button>
+    <button id="admin-import-btn" class="warn hidden" onclick="openImportModal()">📥 匯入基底資料</button>
+  </div>
+
+  <div id="month-panel" class="month-panel hidden">
+    <div class="month-head">
+      <strong>📅 月份填報狀況</strong>
+      <select id="month-select" onchange="onMonthChange(this.value)"></select>
+      <span id="month-summary" class="month-summary"></span>
+      <span class="month-hint">點管理處可篩選其案場；僅計各管理處帳號自己的修改（admin 代改不計）</span>
+    </div>
+    <div id="month-grid" class="month-grid"></div>
+  </div>
+
+  <div id="site-list" class="site-list"></div>
+</div>
+
+<!-- ============ Add-site modal ============ -->
+<div id="add-site-modal" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:640px">
+    <h2>➕ 新增案場</h2>
+    <p style="color:#64748b;font-size:13px;margin-bottom:16px">新增後會立即出現在案場清單中，並可被匯出至月報 Excel。</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px">
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">管理處 <span style="color:#dc2626">*</span></label>
+        <select id="new-mgmt" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px"></select>
+      </div>
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">案場進度 <span style="color:#dc2626">*</span></label>
+        <select id="new-stage" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px"></select>
+      </div>
+      <div style="grid-column:1/-1">
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">案場名稱 <span style="color:#dc2626">*</span></label>
+        <input id="new-site-name" type="text" placeholder="例：桃園大圳(18k-25k)" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
+      </div>
+      <div style="grid-column:1/-1">
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">契約名稱</label>
+        <input id="new-contract" type="text" placeholder="例：桃園大圳幹線太陽光電發電系統計畫" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
+      </div>
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">設置廠商</label>
+        <input id="new-vendor" type="text" placeholder="例：耀盈能源科技股份有限公司" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
+      </div>
+      <div>
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">裝置容量 (MW)</label>
+        <input id="new-capacity" type="number" step="0.0001" min="0" placeholder="例：1.75" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
+      </div>
+      <div style="grid-column:1/-1">
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">辦理情形</label>
+        <textarea id="new-operation" placeholder="填寫目前辦理情形…" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-family:inherit;min-height:80px;resize:vertical"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button onclick="closeAddSiteModal()">取消</button>
+      <button onclick="doAddSite()" style="background:#0284c7;color:white;border:none;padding:7px 18px;border-radius:6px;font-weight:600;cursor:pointer">✅ 新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Import modal (admin only) ============ -->
+<div id="import-modal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h2>匯入基底資料</h2>
+    <p style="color:#64748b;font-size:13px">貼上從 filling_11508.html 檔案中 <code>&lt;script id="snapshot-data"&gt;</code> 標籤內的 JSON 內容（或直接貼整個 HTML，我會自動抽 JSON 出來）。</p>
+    <textarea id="import-textarea" placeholder='貼上 JSON 或整個 HTML 檔案內容...'></textarea>
+    <div style="margin-top:8px;color:#64748b;font-size:12px">
+      或直接上傳 filling_XXXXX.html：<input type="file" accept=".html,.json" onchange="loadFileToImport(event)">
+    </div>
+    <label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:13px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;cursor:pointer">
+      <input type="checkbox" id="import-overwrite" style="margin-top:3px">
+      <span><strong style="color:#92400e">用檔案內容覆蓋「案場進度」與「辦理情形」</strong><br>
+      <span style="color:#a16207;font-size:12px">未勾選：已有填報內容的案場不會被改動（只更新契約、廠商、容量等基本欄位）。<br>勾選：只覆蓋與檔案不同的案場，舊內容會留在該案場的修改歷程，可追溯。</span></span>
+    </label>
+    <div class="modal-actions">
+      <button onclick="closeImportModal()">取消</button>
+      <button class="primary" style="background:#7c3aed;color:white;border:none;padding:7px 16px;border-radius:6px;font-weight:600;cursor:pointer" onclick="doImport()">開始匯入</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, setDoc, onSnapshot, writeBatch, serverTimestamp, arrayUnion, updateDoc, deleteDoc, getDoc, query, orderBy }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ============ Firebase config ============
+const firebaseConfig = {
+  apiKey: "AIzaSyAl2-5duXzA5UnMLaTjYp4K2PBrnzZJ-EE",
+  authDomain: "william-858.firebaseapp.com",
+  projectId: "william-858",
+  storageBucket: "william-858.firebasestorage.app",
+  messagingSenderId: "71885072820",
+  appId: "1:71885072820:web:7e27d4fefb624aea812ae1"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ============ Email → 管理處 mapping ============
+const EMAIL_TO_MGMT = {
+  'taoyuan@triwra.gov.tw':   '桃園',
+  'shimen@triwra.gov.tw':    '石門',
+  'hsinchu@triwra.gov.tw':   '新竹',
+  'miaoli@triwra.gov.tw':    '苗栗',
+  'taichung@triwra.gov.tw':  '臺中',
+  'nantou@triwra.gov.tw':    '南投',
+  'changhua@triwra.gov.tw':  '彰化',
+  'yunlin@triwra.gov.tw':    '雲林',
+  'chianan@triwra.gov.tw':   '嘉南',
+  'kaohsiung@triwra.gov.tw': '高雄',
+  'pingtung@triwra.gov.tw':  '屏東',
+  'yilan@triwra.gov.tw':     '宜蘭',
+  'hualien@triwra.gov.tw':   '花蓮',
+  'taitung@triwra.gov.tw':   '臺東',
+};
+const ADMIN_EMAIL = 'admin@triwra.gov.tw';
+const MGMT_LIST = ['桃園','石門','新竹','苗栗','臺中','南投','彰化','雲林','嘉南','高雄','屏東','宜蘭','花蓮','臺東'];
+
+const STAGE_OPTIONS = [
+  '規劃中', '尚未送件', '土地容許', '電業籌設',
+  '併聯審查(未送)', '併聯審查', '施工階段', '已併網', '已解約', '已撤案'
+];
+
+// Normalize 台中/臺中 to 臺中 for matching
+function normMgmt(m) {
+  if (!m) return '';
+  const s = String(m).trim();
+  if (s === '台中' || s === '臺中') return '臺中';
+  if (s === '台東' || s === '臺東') return '臺東';
+  return s;
+}
+
+// ============ State ============
+const state = {
+  user: null,
+  mgmt: null,          // '桃園' | 'admin' | null
+  isAdmin: false,
+  sites: [],           // all sites from Firestore
+  dirty: {},           // { siteId: { stage, operation } }
+  unsub: null,
+};
+
+// ============ Auth ============
+window.doLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!email || !pw) { errEl.textContent = '請輸入電子郵件和密碼'; errEl.style.display = 'block'; return; }
+  try {
+    await signInWithEmailAndPassword(auth, email, pw);
+  } catch (e) {
+    errEl.textContent = '登入失敗：' + (e.code === 'auth/invalid-credential' ? '帳號或密碼錯誤' : e.message);
+    errEl.style.display = 'block';
+  }
+};
+
+window.doLogout = async function() {
+  if (Object.keys(state.dirty).length > 0) {
+    if (!confirm('有未儲存的變更，確定要登出？')) return;
+  }
+  if (state.unsub) state.unsub();
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    state.user = user;
+    state.isAdmin = (user.email === ADMIN_EMAIL);
+    state.mgmt = state.isAdmin ? 'admin' : (EMAIL_TO_MGMT[user.email] || null);
+
+    if (!state.mgmt) {
+      alert('此帳號尚未對應到任何管理處。請聯絡管理員。');
+      signOut(auth);
+      return;
+    }
+
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('user-email').textContent = user.email;
+    const badge = document.getElementById('user-badge');
+    if (state.isAdmin) {
+      badge.textContent = '管理員';
+      badge.className = 'badge badge-admin';
+      document.getElementById('mgmt-filter').classList.remove('hidden');
+      document.getElementById('admin-import-btn').classList.remove('hidden');
+      document.getElementById('admin-export-btn').classList.remove('hidden');
+      document.getElementById('month-panel').classList.remove('hidden');
+      // populate mgmt filter
+      const sel = document.getElementById('mgmt-filter');
+      MGMT_LIST.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m; opt.textContent = m + '管理處';
+        sel.appendChild(opt);
+      });
+    } else {
+      badge.textContent = state.mgmt + '管理處';
+      badge.className = 'badge';
+      document.getElementById('month-panel').classList.add('hidden');
+    }
+
+    // populate stage filter
+    const stageSel = document.getElementById('stage-filter');
+    STAGE_OPTIONS.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      stageSel.appendChild(opt);
+    });
+
+    subscribeSites();
+  } else {
+    state.user = null;
+    state.mgmt = null;
+    state.sites = [];
+    state.dirty = {};
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('login-password').value = '';
+  }
+});
+
+// ============ Firestore: subscribe to sites ============
+function subscribeSites() {
+  const q = collection(db, 'solar_sites');
+  state.unsub = onSnapshot(q, (snap) => {
+    state.sites = [];
+    snap.forEach(d => state.sites.push({ id: d.id, ...d.data() }));
+    // sort by mgmt order then name
+    const order = new Map(MGMT_LIST.map((m,i) => [m, i]));
+    state.sites.sort((a,b) => {
+      const oa = order.get(normMgmt(a.mgmt)) ?? 99;
+      const ob = order.get(normMgmt(b.mgmt)) ?? 99;
+      if (oa !== ob) return oa - ob;
+      return String(a.site_name||'').localeCompare(String(b.site_name||''), 'zh-Hant');
+    });
+    renderSites();
+    renderMonthPanel();
+  }, (err) => {
+    console.error('Firestore subscribe error:', err);
+    toast('讀取資料失敗：' + err.message, 'err');
+  });
+}
+
+// ============ Render ============
+let _composing = false;
+let _pendingRender = false;
+document.addEventListener('compositionstart', () => { _composing = true; });
+document.addEventListener('compositionend', () => {
+  _composing = false;
+  if (_pendingRender) { _pendingRender = false; setTimeout(() => window.renderSites(), 0); }
+});
+
+function captureFocus() {
+  const a = document.activeElement;
+  if (!a || !a.dataset || !a.dataset.field) return null;
+  const card = a.closest('.site-card');
+  if (!card) return null;
+  return {
+    cardId: card.id, field: a.dataset.field,
+    start: a.selectionStart, end: a.selectionEnd, scrollTop: a.scrollTop
+  };
+}
+function restoreFocus(info) {
+  if (!info) return;
+  const card = document.getElementById(info.cardId);
+  const el = card && card.querySelector('[data-field="' + info.field + '"]');
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  if (typeof info.start === 'number' && el.setSelectionRange) {
+    try { el.setSelectionRange(info.start, info.end); } catch (e) {}
+  }
+  el.scrollTop = info.scrollTop;
+}
+
+window.renderSites = function() {
+  if (_composing) { _pendingRender = true; return; }
+  const container = document.getElementById('site-list');
+  const search = document.getElementById('search-input').value.trim().toLowerCase();
+  const mgmtFilter = state.isAdmin ? document.getElementById('mgmt-filter').value : state.mgmt;
+  const stageFilter = document.getElementById('stage-filter').value;
+
+  // filter
+  let list = state.sites;
+  if (mgmtFilter) list = list.filter(s => normMgmt(s.mgmt) === normMgmt(mgmtFilter));
+  if (stageFilter) list = list.filter(s => (s.current_stage||'') === stageFilter);
+  if (search) list = list.filter(s =>
+    String(s.site_name||'').toLowerCase().includes(search) ||
+    String(s.vendor||'').toLowerCase().includes(search) ||
+    String(s.contract_name||'').toLowerCase().includes(search));
+
+  // 本月有更新的案場置頂（依最後更新時間新→舊），其餘維持原排序
+  list = prioritizeRecent(list);
+
+  // stats
+  document.getElementById('stat-total').textContent = list.length;
+  const updatedCount = list.filter(s => s.updated_at).length;
+  document.getElementById('stat-updated').textContent = updatedCount;
+
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty">' +
+      (state.sites.length === 0
+        ? (state.isAdmin ? '尚無案場資料。請點右上「📥 匯入基底資料」開始。' : '此管理處目前沒有案場資料，請聯絡管理員匯入基底。')
+        : '沒有符合條件的案場') +
+      '</div>';
+    return;
+  }
+
+  const focusInfo = captureFocus();
+  const scrollY = window.scrollY;
+  container.innerHTML = list.map(s => renderCard(s)).join('');
+  restoreFocus(focusInfo);
+  window.scrollTo(0, scrollY);
+};
+
+function renderCard(s) {
+  const d = state.dirty[s.id];
+  const stage = d ? d.stage : (s.current_stage || '');
+  const operation = d ? d.operation : (s.current_operation || '');
+  const isDirty = !!d;
+  const stageClass = 'stage-' + String(stage).replace(/[()]/g,'');
+  const updatedInfo = s.updated_at
+    ? `${s.updated_by || ''} · ${formatTs(s.updated_at)}`
+    : '尚未更新';
+
+  return `
+    <div class="site-card ${isDirty ? 'dirty' : (s.updated_at ? 'saved' : '')}" id="card-${s.id}">
+      <h3>
+        <span>${escapeHtml(s.site_name || '(無名稱)')}</span>
+        ${stage ? `<span class="stage-badge ${stageClass}">${escapeHtml(stage)}</span>` : ''}
+        ${isUpdatedThisMonth(s) ? `<span class="updated-tag">本月已更新</span>` : ''}
+      </h3>
+      <div class="site-meta">
+        <span><strong>管理處：</strong>${escapeHtml(normMgmt(s.mgmt))}</span>
+        ${s.vendor ? `<span><strong>廠商：</strong>${escapeHtml(s.vendor)}</span>` : ''}
+        ${s.capacity_mw ? `<span><strong>容量：</strong>${s.capacity_mw} MW</span>` : ''}
+        ${s.contract_name ? `<span><strong>契約：</strong>${escapeHtml(s.contract_name)}</span>` : ''}
+      </div>
+      <div class="form-row cols-2">
+        <div>
+          <label>案場進度</label>
+          <select data-field="stage" onchange="markDirty('${s.id}', 'stage', this.value)">
+            <option value=""${!stage?' selected':''}>(請選擇)</option>
+            ${STAGE_OPTIONS.map(o => `<option value="${o}"${stage===o?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>辦理情形</label>
+          <textarea data-field="operation" oninput="markDirty('${s.id}', 'operation', this.value)">${escapeHtml(operation)}</textarea>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-save" onclick="saveSite('${s.id}')" ${!isDirty ? 'disabled' : ''}>💾 儲存</button>
+        ${isDirty ? `<button class="btn-reset" onclick="resetSite('${s.id}')">取消變更</button>` : ''}
+        <span class="status ${s.updated_at?'ok':''}">${updatedInfo}</span>
+        <span style="flex:1"></span>
+        ${canDelete(s) ? `<button onclick="doDeleteSite('${s.id}')" style="padding:6px 12px;background:white;color:#dc2626;border:1px solid #fecaca;border-radius:6px;font-size:12px;cursor:pointer" title="刪除此案場（不可還原）">🗑️ 刪除</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ============ Edit / save ============
+window.markDirty = function(id, field, value) {
+  const site = state.sites.find(s => s.id === id);
+  if (!site) return;
+  if (!state.dirty[id]) state.dirty[id] = {
+    stage: site.current_stage || '',
+    operation: site.current_operation || ''
+  };
+  state.dirty[id][field] = value;
+  // 只做局部更新，不能重繪整張卡片（否則輸入框會失去焦點、游標與捲動位置，中文輸入法也會中斷）
+  updateCardDirtyUI(id);
+};
+
+function updateCardDirtyUI(id) {
+  const el = document.getElementById('card-' + id);
+  const d = state.dirty[id];
+  if (!el || !d) return;
+  el.classList.add('dirty');
+  el.classList.remove('saved');
+  const saveBtn = el.querySelector('.btn-save');
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    if (!el.querySelector('.btn-reset')) {
+      const b = document.createElement('button');
+      b.className = 'btn-reset';
+      b.textContent = '取消變更';
+      b.setAttribute('onclick', `resetSite('${id}')`);
+      saveBtn.insertAdjacentElement('afterend', b);
+    }
+  }
+  const h3 = el.querySelector('h3');
+  if (h3) {
+    let badge = h3.querySelector('.stage-badge');
+    if (d.stage) {
+      if (!badge) { badge = document.createElement('span'); h3.appendChild(badge); }
+      badge.className = 'stage-badge stage-' + String(d.stage).replace(/[()]/g, '');
+      badge.textContent = d.stage;
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+}
+
+window.resetSite = function(id) {
+  delete state.dirty[id];
+  refreshCard(id);
+};
+
+window.saveSite = async function(id) {
+  const d = state.dirty[id];
+  if (!d) return;
+  const site = state.sites.find(s => s.id === id);
+  if (!site) return;
+  const cardEl = document.getElementById('card-' + id);
+  const btn = cardEl ? cardEl.querySelector('.btn-save') : null;
+  if (!btn) return;
+  btn.disabled = true; btn.textContent = '儲存中…';
+
+  try {
+    const ref = doc(db, 'solar_sites', id);
+    const historyEntry = {
+      at: new Date().toISOString(),
+      by: state.user.email,
+      by_mgmt: state.isAdmin ? 'admin' : state.mgmt,
+      stage: d.stage,
+      operation: d.operation,
+    };
+    await updateDoc(ref, {
+      current_stage: d.stage,
+      current_operation: d.operation,
+      updated_at: serverTimestamp(),
+      updated_by: state.isAdmin ? 'admin' : state.mgmt,
+      updated_by_email: state.user.email,
+      history: arrayUnion(historyEntry),
+    });
+    delete state.dirty[id];
+    toast('已儲存', 'ok');
+    // onSnapshot 會自動 refresh
+  } catch (e) {
+    console.error(e);
+    toast('儲存失敗：' + e.message, 'err');
+    btn.disabled = false; btn.textContent = '💾 儲存';
+  }
+};
+
+// ============ 月份更新判斷 ============
+function monthKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function toDateSafe(v) {
+  if (!v) return null;
+  const d = v.toDate ? v.toDate() : new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+// 取出一個案場的所有修改事件 [{at: Date, byMgmt: string}]
+// 以 history 為準；若舊資料沒有 history，退而用 updated_at / updated_by
+function siteEvents(s) {
+  const ev = [];
+  if (Array.isArray(s.history)) {
+    s.history.forEach(h => {
+      if (h && h.action === 'import_overwrite') return;   // 管理員匯入覆蓋，不算填報／更新
+      const d = toDateSafe(h && h.at);
+      if (d) ev.push({ at: d, byMgmt: (h.by_mgmt || '') });
+    });
+  }
+  if (ev.length === 0 && s.updated_at) {
+    const d = toDateSafe(s.updated_at);
+    if (d) ev.push({ at: d, byMgmt: (s.updated_by || '') });
+  }
+  return ev;
+}
+function isUpdatedThisMonth(s) {
+  const cur = monthKey(new Date());
+  return siteEvents(s).some(e => monthKey(e.at) === cur);
+}
+function prioritizeRecent(list) {
+  const cur = monthKey(new Date());
+  const top = [], rest = [];
+  list.forEach(s => {
+    const ev = siteEvents(s).filter(e => monthKey(e.at) === cur);
+    if (ev.length) top.push({ s, t: Math.max(...ev.map(e => e.at.getTime())) });
+    else rest.push(s);
+  });
+  top.sort((a, b) => b.t - a.t);
+  return top.map(x => x.s).concat(rest);
+}
+
+// ============ Admin：月份填報狀況面板 ============
+window.onMonthChange = function(v) {
+  state.monthSel = v;
+  renderMonthPanel();
+};
+window.filterByMgmt = function(m) {
+  const sel = document.getElementById('mgmt-filter');
+  if (sel) sel.value = m;
+  renderSites();
+  document.getElementById('site-list').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+function rocMonthLabel(key) {
+  const [y, m] = key.split('-').map(Number);
+  return `${y - 1911}年${m}月`;
+}
+function renderMonthPanel() {
+  const panel = document.getElementById('month-panel');
+  if (!state.isAdmin || !panel) return;
+
+  const curKey = monthKey(new Date());
+  const keys = new Set([curKey]);
+  state.sites.forEach(s => siteEvents(s).forEach(e => keys.add(monthKey(e.at))));
+  const months = [...keys].sort().reverse();
+  if (!state.monthSel || !keys.has(state.monthSel)) state.monthSel = curKey;
+  const sel = state.monthSel;
+
+  const selectEl = document.getElementById('month-select');
+  if (document.activeElement !== selectEl) {
+    selectEl.innerHTML = months.map(k =>
+      `<option value="${k}"${k === sel ? ' selected' : ''}>${rocMonthLabel(k)}${k === curKey ? '（本月）' : ''}</option>`
+    ).join('');
+  }
+
+  const pad = n => String(n).padStart(2, '0');
+  let done = 0, todo = 0, none = 0;
+  const chips = MGMT_LIST.map(m => {
+    const sites = state.sites.filter(s => normMgmt(s.mgmt) === m);
+    if (sites.length === 0) {
+      none++;
+      return `<div class="mchip none"><span class="name">${m}</span>無案場資料</div>`;
+    }
+    let updatedSites = 0, last = null;
+    sites.forEach(s => {
+      // 只計該管理處帳號自己的修改（排除 admin 代改）
+      const ev = siteEvents(s).filter(e =>
+        monthKey(e.at) === sel && e.byMgmt !== 'admin' && normMgmt(e.byMgmt) === m);
+      if (ev.length) {
+        updatedSites++;
+        ev.forEach(e => { if (!last || e.at > last) last = e.at; });
+      }
+    });
+    if (updatedSites > 0) {
+      done++;
+      const t = `${pad(last.getMonth() + 1)}/${pad(last.getDate())} ${pad(last.getHours())}:${pad(last.getMinutes())}`;
+      return `<button class="mchip done" onclick="filterByMgmt('${m}')"><span class="name">✅ ${m}</span>已填報（${updatedSites}/${sites.length} 案有更新）<br>最後：${t}</button>`;
+    }
+    todo++;
+    return `<button class="mchip todo" onclick="filterByMgmt('${m}')"><span class="name">❌ ${m}</span>未填報（共 ${sites.length} 案）</button>`;
+  });
+
+  document.getElementById('month-summary').innerHTML =
+    `已填報 <b class="ok">${done}</b> ／ 未填報 <b class="todo">${todo}</b>` +
+    (none ? ` ／ 無案場 ${none}` : '');
+  document.getElementById('month-grid').innerHTML = chips.join('');
+}
+
+function refreshCard(id) {
+  const site = state.sites.find(s => s.id === id);
+  if (!site) return;
+  const el = document.getElementById('card-' + id);
+  if (!el) return;
+  el.outerHTML = renderCard(site);
+}
+
+// ============ Admin: import base data ============
+window.openImportModal = function() {
+  document.getElementById('import-modal').classList.remove('hidden');
+};
+window.closeImportModal = function() {
+  document.getElementById('import-modal').classList.add('hidden');
+  document.getElementById('import-textarea').value = '';
+};
+
+window.loadFileToImport = function(evt) {
+  const f = evt.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('import-textarea').value = e.target.result;
+  };
+  reader.readAsText(f);
+};
+
+window.doImport = async function() {
+  const raw = document.getElementById('import-textarea').value.trim();
+  if (!raw) { alert('請貼上資料'); return; }
+
+  // Try to extract JSON: either it's pure JSON, or it's the whole HTML with <script id="snapshot-data">
+  let data;
+  try {
+    if (raw.startsWith('{')) {
+      data = JSON.parse(raw);
+    } else {
+      const m = raw.match(/<script[^>]*id="snapshot-data"[^>]*>([\s\S]*?)<\/script>/);
+      if (!m) throw new Error('找不到 snapshot-data 區塊');
+      data = JSON.parse(m[1]);
+    }
+  } catch (e) {
+    alert('解析失敗：' + e.message);
+    return;
+  }
+
+  const solarList = data.solar_addendum;
+  if (!Array.isArray(solarList)) { alert('資料格式錯誤：缺少 solar_addendum 陣列'); return; }
+
+  // 覆蓋模式：找出「已存在、且檔案內容與目前不同」的案場
+  const overwrite = !!document.getElementById('import-overwrite').checked;
+  const overwriteList = [];
+  if (overwrite) {
+    for (const s of solarList) {
+      const id = makeId(s);
+      const ex = state.sites.find(x => x.id === id);
+      if (!ex) continue;
+      const newStage = s.current_stage || '';
+      const newOp = s.current_operation || '';
+      const stageChanged = newStage && newStage !== (ex.current_stage || '');
+      const opChanged = newOp && newOp !== (ex.current_operation || '');
+      if (stageChanged || opChanged) overwriteList.push({ id, s, ex, newStage, newOp, stageChanged, opChanged });
+    }
+    const byMgmt = overwriteList.filter(o => o.ex.updated_by && o.ex.updated_by !== 'admin');
+    let msg = `覆蓋模式：將以檔案內容覆蓋 ${overwriteList.length} 個案場的「案場進度／辦理情形」。\n舊內容會記錄在修改歷程。\n`;
+    if (byMgmt.length > 0) {
+      msg += `\n⚠️ 其中 ${byMgmt.length} 個案場曾由管理處修改過，會被檔案內容取代：\n` +
+        byMgmt.slice(0, 12).map(o => `・${normMgmt(o.ex.mgmt)}／${o.ex.site_name}（${o.ex.updated_by}）`).join('\n') +
+        (byMgmt.length > 12 ? `\n…還有 ${byMgmt.length - 12} 個` : '') + '\n';
+    }
+    msg += '\n確定繼續？';
+    if (overwriteList.length === 0) {
+      if (!confirm('檔案與目前系統的「案場進度／辦理情形」沒有差異，不需要覆蓋。\n仍要繼續更新基本欄位嗎？')) return;
+    } else if (!confirm(msg)) return;
+  }
+
+  if (!confirm(`將匯入 ${solarList.length} 個太陽光電案場到 Firestore。\n\n此操作會覆蓋同名案場，但保留已填報的階段與辦理情形。\n確定繼續？`)) return;
+
+  const btn = document.querySelector('#import-modal .primary');
+  btn.disabled = true; btn.textContent = '匯入中…';
+
+  try {
+    // Firestore batch 上限 500 ops per batch
+    const batches = [];
+    let batch = writeBatch(db);
+    let count = 0;
+
+    for (const s of solarList) {
+      const id = makeId(s);
+      const ref = doc(db, 'solar_sites', id);
+      const payload = {
+        site_name: s.site_name || '',
+        mgmt: normMgmt(s.mgmt || ''),
+        contract_name: s.contract_name || '',
+        vendor: s.vendor || '',
+        capacity_mw: s.capacity_mw || null,
+        site_progress: s.site_progress || '',
+        sign_date: s.sign_date || '',
+        install_deadline: s.install_deadline || '',
+        expire_status: s.expire_status || '',
+        // 填報欄位：初始值從 snapshot 帶入，之後由管理處覆蓋
+        current_stage_seed: s.current_stage || '',
+        current_operation_seed: s.current_operation || '',
+      };
+      // use setDoc with merge: overwrite base fields, keep current_stage/current_operation if already set
+      batch.set(ref, payload, { merge: true });
+      count++;
+      if (count % 400 === 0) { batches.push(batch); batch = writeBatch(db); }
+    }
+    batches.push(batch);
+    for (const b of batches) await b.commit();
+
+    // Second pass: for docs without current_stage yet, seed it from snapshot
+    // (do this separately so we don't overwrite existing filings)
+    const seedBatch = writeBatch(db);
+    let seedCount = 0;
+    for (const s of solarList) {
+      const id = makeId(s);
+      const existing = state.sites.find(x => x.id === id);
+      if (existing && !existing.current_stage && s.current_stage) {
+        seedBatch.update(doc(db, 'solar_sites', id), {
+          current_stage: s.current_stage,
+          current_operation: s.current_operation || '',
+        });
+        seedCount++;
+      } else if (!existing) {
+        // brand new doc — set initial values
+        seedBatch.set(doc(db, 'solar_sites', id), {
+          current_stage: s.current_stage || '',
+          current_operation: s.current_operation || '',
+        }, { merge: true });
+        seedCount++;
+      }
+    }
+    if (seedCount > 0) await seedBatch.commit();
+
+    // 覆蓋案場進度/辦理情形（含歷程，不更動 updated_at，以免全部案場被當成「本月已更新」）
+    let overwritten = 0;
+    if (overwrite && overwriteList.length > 0) {
+      const nowIso = new Date().toISOString();
+      for (let i = 0; i < overwriteList.length; i += 200) {
+        const ob = writeBatch(db);
+        overwriteList.slice(i, i + 200).forEach(o => {
+          const upd = {
+            history: arrayUnion({
+              at: nowIso, by: state.user.email, by_mgmt: 'admin', action: 'import_overwrite',
+              stage: o.stageChanged ? o.newStage : (o.ex.current_stage || ''),
+              operation: o.opChanged ? o.newOp : (o.ex.current_operation || ''),
+              prev_stage: o.ex.current_stage || '', prev_operation: o.ex.current_operation || '',
+            }),
+          };
+          if (o.stageChanged) upd.current_stage = o.newStage;
+          if (o.opChanged) upd.current_operation = o.newOp;
+          ob.update(doc(db, 'solar_sites', o.id), upd);
+        });
+        await ob.commit();
+      }
+      overwritten = overwriteList.length;
+    }
+
+    closeImportModal();
+    toast(`✅ 匯入完成：${count} 個案場` + (overwrite ? `，覆蓋進度/辦理情形 ${overwritten} 個` : ''), 'ok');
+  } catch (e) {
+    console.error(e);
+    alert('匯入失敗：' + e.message);
+    btn.disabled = false; btn.textContent = '開始匯入';
+  }
+};
+
+function makeId(s) {
+  // Stable ID: mgmt + site_name (sanitized)
+  const mgmt = normMgmt(s.mgmt || 'unknown');
+  const name = String(s.site_name || 'unnamed').replace(/[\/\.\#\$\[\]]/g, '_').slice(0, 80);
+  return `${mgmt}__${name}`;
+}
+
+// ============ Add / delete sites ============
+window.canDelete = function(site) {
+  if (!state.user) return false;
+  if (state.isAdmin) return true;
+  return normMgmt(site.mgmt) === state.mgmt;
+};
+
+window.openAddSiteModal = function() {
+  // 填 mgmt 下拉
+  const mgmtSel = document.getElementById('new-mgmt');
+  mgmtSel.innerHTML = '';
+  if (state.isAdmin) {
+    MGMT_LIST.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m + '管理處';
+      mgmtSel.appendChild(opt);
+    });
+    mgmtSel.disabled = false;
+  } else {
+    // 一般管理處：鎖定為自己
+    const opt = document.createElement('option');
+    opt.value = state.mgmt; opt.textContent = state.mgmt + '管理處';
+    mgmtSel.appendChild(opt);
+    mgmtSel.disabled = true;
+  }
+  // 填階段下拉
+  const stageSel = document.getElementById('new-stage');
+  stageSel.innerHTML = '<option value="">(請選擇)</option>' +
+    STAGE_OPTIONS.map(o => `<option value="${o}">${o}</option>`).join('');
+  // 清空其他欄位
+  ['new-site-name','new-contract','new-vendor','new-capacity','new-operation'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('add-site-modal').classList.remove('hidden');
+};
+
+window.closeAddSiteModal = function() {
+  document.getElementById('add-site-modal').classList.add('hidden');
+};
+
+window.doAddSite = async function() {
+  const mgmt = document.getElementById('new-mgmt').value;
+  const stage = document.getElementById('new-stage').value;
+  const siteName = document.getElementById('new-site-name').value.trim();
+  const contract = document.getElementById('new-contract').value.trim();
+  const vendor = document.getElementById('new-vendor').value.trim();
+  const capacity = parseFloat(document.getElementById('new-capacity').value);
+  const operation = document.getElementById('new-operation').value.trim();
+
+  if (!mgmt) { alert('請選擇管理處'); return; }
+  if (!siteName) { alert('請輸入案場名稱'); return; }
+  if (!stage) { alert('請選擇案場進度'); return; }
+
+  const id = makeId({ mgmt, site_name: siteName });
+
+  // 檢查是否已存在同名案場
+  const existing = state.sites.find(s => s.id === id);
+  if (existing) {
+    if (!confirm(`已有同名案場「${siteName}」在 ${mgmt}管理處。\n\n繼續會覆蓋原案場的資料，確定嗎？`)) return;
+  }
+
+  try {
+    const ref = doc(db, 'solar_sites', id);
+    const now = new Date();
+    const historyEntry = {
+      at: now.toISOString(),
+      by: state.user.email,
+      by_mgmt: state.isAdmin ? 'admin' : state.mgmt,
+      action: 'created',
+      stage: stage,
+      operation: operation,
+    };
+    await setDoc(ref, {
+      site_name: siteName,
+      mgmt: normMgmt(mgmt),
+      contract_name: contract,
+      vendor: vendor,
+      capacity_mw: isNaN(capacity) ? null : capacity,
+      site_count: 1,
+      site_progress: '',
+      current_stage: stage,
+      current_operation: operation,
+      created_at: serverTimestamp(),
+      created_by: state.isAdmin ? 'admin' : state.mgmt,
+      created_by_email: state.user.email,
+      updated_at: serverTimestamp(),
+      updated_by: state.isAdmin ? 'admin' : state.mgmt,
+      updated_by_email: state.user.email,
+      history: [historyEntry],
+      manually_added: true,
+    }, { merge: true });
+    closeAddSiteModal();
+    toast(`✅ 已新增案場「${siteName}」`, 'ok');
+  } catch (e) {
+    console.error(e);
+    alert('新增失敗：' + e.message);
+  }
+};
+
+window.doDeleteSite = async function(id) {
+  const site = state.sites.find(s => s.id === id);
+  if (!site) return;
+  if (!canDelete(site)) { alert('沒有權限刪除此案場'); return; }
+
+  const confirmText = `確定要刪除以下案場？\n\n` +
+    `管理處：${normMgmt(site.mgmt)}\n` +
+    `案場名稱：${site.site_name}\n` +
+    (site.capacity_mw ? `裝置容量：${site.capacity_mw} MW\n` : '') +
+    `\n此操作不可還原。`;
+  if (!confirm(confirmText)) return;
+
+  try {
+    await deleteDoc(doc(db, 'solar_sites', id));
+    // 清掉 dirty 狀態（如有）
+    delete state.dirty[id];
+    toast(`🗑️ 已刪除「${site.site_name}」`, 'ok');
+  } catch (e) {
+    console.error(e);
+    alert('刪除失敗：' + e.message);
+  }
+};
+
+// ============ Admin: export monthly Excel (dashboard-compatible ZIP) ============
+window.doExport = async function() {
+  if (state.sites.length === 0) { alert('目前沒有資料可以匯出'); return; }
+
+  // 問使用者:期別
+  const defaultPeriod = getDefaultPeriod();
+  const period = prompt('請輸入期別(民國年月,如 11509 = 115年9月)', defaultPeriod);
+  if (!period) return;
+
+  // 依 mgmt 分組
+  const byMgmt = new Map();
+  MGMT_LIST.forEach(m => byMgmt.set(m, []));
+  state.sites.forEach(s => {
+    const m = normMgmt(s.mgmt);
+    if (byMgmt.has(m)) byMgmt.get(m).push(s);
+  });
+
+  const now = new Date();
+  const rocTs = formatROCTimestamp(now);
+
+  // 只有實際有案場的管理處才產出 Excel
+  const activeMgmts = MGMT_LIST.filter(m => byMgmt.get(m).length > 0);
+  if (activeMgmts.length === 0) { alert('沒有可匯出的資料'); return; }
+
+  const zip = new JSZip();
+
+  activeMgmts.forEach(mgmt => {
+    const sites = byMgmt.get(mgmt);
+    const wb = XLSX.utils.book_new();
+
+    // ===== Metadata sheet =====
+    const metaRows = [
+      ['月報填報 - Metadata(本表為系統匯入用,請勿手動編輯)'],
+      [],
+      ['期別',      period],
+      ['管理處',    mgmt],
+      ['填報人姓名', '台農院系統彙整'],
+      ['聯絡電話',  ''],
+      ['填報時間',  rocTs],
+      ['快照日期',  rocTs],
+      ['快照來源',  'Firebase 即時填報系統 (william-858.web.app)'],
+    ];
+    const wsMeta = XLSX.utils.aoa_to_sheet(metaRows);
+    wsMeta['!cols'] = [{wch:16}, {wch:60}];
+    XLSX.utils.book_append_sheet(wb, wsMeta, 'Metadata');
+
+    // ===== 太陽光電 sheet =====
+    // 欄位順序與 filling_11508.html 產出格式一致
+    const solarHeader = [
+      '狀態', '案場ID', '管理處', '契約名稱', '案場進度', '設置廠商', '案場名稱',
+      '案場數量', '裝置容量(MW)', '目前階段', '簽約日期', '設置期限', '到期狀態',
+      '目前辦理情況', '困難點說明', '專案團隊處理建議', '備註'
+    ];
+    const solarRows = sites.map(s => [
+      s.updated_at ? '已更新' : '未更新',   // 狀態
+      s.id || '',                            // 案場ID
+      normMgmt(s.mgmt || ''),
+      s.contract_name || '',
+      s.site_progress || '',
+      s.vendor || '',
+      s.site_name || '',
+      s.site_count ?? '',
+      s.capacity_mw ?? '',
+      s.current_stage || '',
+      s.sign_date || '',
+      s.install_deadline || '',
+      s.expire_status || '',
+      s.current_operation || '',           // 對應儀表板「目前辦理情況」欄
+      s.difficulty || '',
+      s.team_suggestion || '',
+      s.note || '',
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([solarHeader, ...solarRows]);
+    ws['!cols'] = [
+      {wch:8},  {wch:24}, {wch:8},  {wch:36}, {wch:12}, {wch:24}, {wch:28},
+      {wch:8},  {wch:10}, {wch:14}, {wch:12}, {wch:20}, {wch:10},
+      {wch:60}, {wch:20}, {wch:20}, {wch:20}
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, '太陽光電');
+
+    // 寫入 zip
+    const wbArray = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    const filename = `${period}_${mgmt}管理處_太陽光電填報.xlsx`;
+    zip.file(filename, wbArray);
+  });
+
+  // 產出 zip 並下載
+  try {
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${period}_月報填報_${formatFilenameDate(now)}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast(`✅ 已匯出 ${activeMgmts.length} 個管理處(${state.sites.length} 案場)`, 'ok');
+  } catch (e) {
+    console.error(e);
+    alert('匯出失敗:' + e.message);
+  }
+};
+
+function getDefaultPeriod() {
+  // 民國年月:如西元 2026 年 8 月 → 115 年 08 月 → 11508
+  const now = new Date();
+  const year = now.getFullYear() - 1911;
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}${month}`;
+}
+
+function formatROCTimestamp(d) {
+  const year = d.getFullYear() - 1911;
+  const pad = n => String(n).padStart(2,'0');
+  return `${year}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function formatFilenameDate(d) {
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+
+// ============ Utilities ============
+function escapeHtml(str) {
+  return String(str||'').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+function formatTs(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function toast(msg, kind) {
+  const el = document.getElementById('toast');
+  el.className = 'toast ' + (kind || 'ok') + ' show';
+  el.textContent = msg;
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Enter key on login
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('login-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+</script>
+</body>
+</html>

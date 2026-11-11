@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11510 月報填報 · 農田水利署綠能管考</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+         margin: 0; padding: 0; background: #f8fafc; color: #0f172a; line-height: 1.5; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  
+  /* Header */
+  .header { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .header h1 { margin: 0 0 6px; font-size: 22px; }
+  .header .meta { color: #64748b; font-size: 13px; }
+  .badge { display: inline-block; background: #ddd6fe; color: #6d28d9;
+           padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-right: 8px; }
+  
+  /* Card */
+  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .card h2 { margin: 0 0 12px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+  .card .subtitle { color: #64748b; font-size: 13px; margin-bottom: 16px; }
+  
+  /* Form */
+  .form-row { display: grid; gap: 12px; margin-bottom: 12px; }
+  .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 700px) { .form-row.cols-2, .form-row.cols-3 { grid-template-columns: 1fr; } }
+  label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+  label .req { color: #dc2626; margin-left: 2px; }
+  input[type="text"], input[type="tel"], input[type="number"], input[type="date"], select, textarea {
+    width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px;
+    font-size: 13px; font-family: inherit; background: white;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid #7c3aed; outline-offset: -1px; border-color: #7c3aed; }
+  textarea { min-height: 50px; resize: vertical; line-height: 1.4; }
+  select { cursor: pointer; }
+  
+  /* Buttons */
+  button { cursor: pointer; padding: 7px 13px; border: 1px solid #cbd5e1; border-radius: 6px;
+           background: white; font-size: 13px; font-weight: 500; font-family: inherit;
+           transition: all 0.15s; }
+  button:hover:not(:disabled) { background: #f1f5f9; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: #7c3aed; color: white; border-color: #6d28d9; font-weight: 600; }
+  .btn-primary:hover:not(:disabled) { background: #6d28d9 !important; }
+  .btn-success { background: #10b981; color: white; border-color: #059669; font-weight: 600; }
+  .btn-success:hover:not(:disabled) { background: #059669 !important; }
+  .btn-danger { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+  .btn-danger:hover:not(:disabled) { background: #fecaca !important; }
+  .btn-large { padding: 11px 22px; font-size: 15px; }
+  
+  /* Tabs - 兩層 */
+  .tabs-l1 { display: flex; gap: 4px; border-bottom: 2px solid #e2e8f0; margin-bottom: 12px; }
+  .tabs-l1 button { background: transparent; border: none; padding: 10px 20px; font-size: 15px;
+                    font-weight: 600; color: #64748b; border-radius: 0; border-bottom: 3px solid transparent;
+                    margin-bottom: -2px; }
+  .tabs-l1 button.active { color: #7c3aed; border-bottom-color: #7c3aed; }
+  .tabs-l1 button:hover:not(.active) { color: #0f172a; }
+  
+  .tabs-l2 { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; padding: 4px; 
+             background: #f1f5f9; border-radius: 8px; }
+  .tabs-l2 button { background: transparent; border: 1px solid transparent; padding: 6px 14px;
+                    font-size: 13px; font-weight: 500; color: #475569; border-radius: 6px; }
+  .tabs-l2 button.active { background: white; color: #0d9488; border-color: #ccfbf1; font-weight: 600;
+                           box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  
+  /* Site cards */
+  .sites-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .sites-toolbar input[type="text"] { flex: 1; min-width: 200px; }
+  .site-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 10px;
+               background: #fafbfc; }
+  .site-card.new { background: #ecfdf5; border-color: #6ee7b7; }
+  .site-card.deleted { background: #fee2e2; border-color: #fca5a5; opacity: 0.6; }
+  .site-card.deleted * { text-decoration: line-through; }
+  .site-card-header { display: flex; align-items: center; justify-content: space-between;
+                      gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed #e2e8f0; }
+  .site-card-title { font-weight: 600; font-size: 14px; flex: 1; }
+  .site-card .grid { display: grid; gap: 8px; }
+  .site-card .grid-1 { grid-template-columns: 1fr; }
+  .site-card .grid-2 { grid-template-columns: 1fr 1fr; }
+  .site-card .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .site-card .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  @media (max-width: 700px) { 
+    .site-card .grid-2, .site-card .grid-3, .site-card .grid-4 { grid-template-columns: 1fr; } 
+  }
+  .site-card .main-field { background: #fffbeb; padding: 8px; border-radius: 6px; border: 1px solid #fde68a; }
+  .site-card .main-field label { color: #92400e; font-weight: 700; }
+  
+  /* 審查欄位(textarea + 快速插入)*/
+  .review-field { position: relative; }
+  .review-field .quick-buttons { display: flex; gap: 3px; margin-top: 3px; }
+  .review-field .quick-buttons button { 
+    flex: 1; padding: 4px 8px; font-size: 13px; font-weight: 600;
+    background: white; border: 1px solid #e2e8f0; color: #475569; border-radius: 4px;
+  }
+  .review-field .quick-buttons button:hover { background: #f0fdfa; border-color: #5eead4; color: #0d9488; }
+  
+  /* Status badge */
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px;
+                  font-size: 11px; font-weight: 600; }
+  .status-new { background: #d1fae5; color: #047857; }
+  .status-deleted { background: #fee2e2; color: #991b1b; }
+  .status-modified { background: #fef3c7; color: #92400e; }
+  
+  /* Submit area */
+  .submit-area { background: white; border-radius: 12px; padding: 24px;
+                 box-shadow: 0 1px 3px rgba(0,0,0,0.06); text-align: center; }
+  .submit-area .confirm { display: flex; align-items: center; justify-content: center; gap: 8px;
+                          margin-bottom: 16px; font-size: 14px; }
+  .submit-area .confirm input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+  
+  /* Empty */
+  .empty { text-align: center; padding: 32px; color: #94a3b8; }
+  .footer { color: #94a3b8; font-size: 12px; text-align: center; margin-top: 24px; padding: 16px; }
+  
+  /* Sub-section */
+  .subsection-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;
+                      letter-spacing: 0.06em; margin: 12px 0 6px; padding-top: 8px; 
+                      border-top: 1px dashed #e2e8f0; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- ============ Header ============ -->
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+    <span style="font-size:28px">📋</span>
+    <div>
+      <h1>11510 月報填報</h1>
+      <div class="meta">
+        <span class="badge">民國 115 年 10 月</span>
+        農田水利署 · 水域型農業綠能 管制考核計畫
+      </div>
+    </div>
+  </div>
+  <div class="meta" style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0">
+    快照日期:2026-10-20　│　資料來源:雙週報管考_-農田水利署農業水域_圳路_農業水庫及埤塘_太陽光電盤點資料_1151020.xlsx（附件一   各管理處推動太陽光電案件辦理情形_篩選版_1020）
+  </div>
+</div>
+
+<!-- ============ Step 1: 基本資料 ============ -->
+<div class="card" id="step1">
+  <h2>👤 第一步:基本資料</h2>
+  <p class="subtitle">請先選擇您的管理處,並填入填報人資訊</p>
+  
+  <div class="form-row">
+    <div>
+      <label>管理處<span class="req">*</span></label>
+      <select id="mgmt-select" onchange="onMgmtChange()">
+        <option value="">-- 請選擇 --</option>
+        <option value="桃園">桃園管理處</option>
+        <option value="石門">石門管理處</option>
+        <option value="新竹">新竹管理處</option>
+        <option value="苗栗">苗栗管理處</option>
+        <option value="臺中">臺中管理處</option>
+        <option value="南投">南投管理處</option>
+        <option value="彰化">彰化管理處</option>
+        <option value="雲林">雲林管理處</option>
+        <option value="嘉南">嘉南管理處</option>
+        <option value="高雄">高雄管理處</option>
+        <option value="屏東">屏東管理處</option>
+        <option value="宜蘭">宜蘭管理處</option>
+        <option value="花蓮">花蓮管理處</option>
+        <option value="臺東">臺東管理處</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="form-row cols-2">
+    <div>
+      <label>填報人姓名<span class="req">*</span></label>
+      <input type="text" id="filler-name" placeholder="例:王大明">
+    </div>
+    <div>
+      <label>聯絡電話</label>
+      <input type="tel" id="filler-phone" placeholder="例:0912-345-678">
+    </div>
+  </div>
+</div>
+
+<!-- ============ Step 2: 案場資料(選了管理處才出現)============ -->
+<div id="step2" style="display:none">
+  <div class="card">
+    <!-- 第一層 Tab -->
+    <div class="tabs-l1">
+      <button id="tab-solar" class="active" onclick="switchCategory('solar')">
+        ☀️ 太陽光電 <span id="tab-solar-count" style="color:#94a3b8;font-weight:400;font-size:12px;margin-left:4px"></span>
+      </button>
+      <button id="tab-hydro" onclick="switchCategory('hydro')">
+        💧 小水力 <span id="tab-hydro-count" style="color:#94a3b8;font-weight:400;font-size:12px;margin-left:4px"></span>
+      </button>
+    </div>
+    
+    <!-- 太陽光電 content -->
+    <div id="content-solar">
+      <div class="sites-toolbar">
+        <input type="text" id="solar-search" placeholder="🔍 搜尋案場名稱或廠商..." oninput="renderSites('solar_addendum')">
+        <button onclick="addSite('solar_addendum')">+ 新增太陽光電案場</button>
+      </div>
+      <div id="list-solar_addendum"></div>
+    </div>
+    
+    <!-- 小水力 content(內含 4 個子分頁)-->
+    <div id="content-hydro" style="display:none">
+      <!-- 第二層 Tab -->
+      <div class="tabs-l2">
+        <button id="subtab-tender" class="active" onclick="switchHydroSubtab('hydro_tender')">
+          🏷️ 招標案 <span id="subtab-tender-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+        <button id="subtab-test" onclick="switchHydroSubtab('hydro_test')">
+          🧪 測試案 <span id="subtab-test-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+        <button id="subtab-potential" onclick="switchHydroSubtab('hydro_potential')">
+          ✨ 潛力案場 <span id="subtab-potential-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+        <button id="subtab-inquiry" onclick="switchHydroSubtab('hydro_inquiry')">
+          📞 洽詢紀錄 <span id="subtab-inquiry-count" style="color:#94a3b8;font-weight:400;font-size:12px">0</span>
+        </button>
+      </div>
+      
+      <div id="sub-tender">
+        <div class="sites-toolbar">
+          <input type="text" id="tender-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_tender')">
+          <button onclick="addSite('hydro_tender')">+ 新增招標案</button>
+        </div>
+        <div id="list-hydro_tender"></div>
+      </div>
+      
+      <div id="sub-test" style="display:none">
+        <div class="sites-toolbar">
+          <input type="text" id="test-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_test')">
+          <button onclick="addSite('hydro_test')">+ 新增測試案</button>
+        </div>
+        <div id="list-hydro_test"></div>
+      </div>
+      
+      <div id="sub-potential" style="display:none">
+        <div class="sites-toolbar">
+          <input type="text" id="potential-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_potential')">
+          <button onclick="addSite('hydro_potential')">+ 新增潛力案場</button>
+        </div>
+        <div id="list-hydro_potential"></div>
+      </div>
+      
+      <div id="sub-inquiry" style="display:none">
+        <div class="sites-toolbar">
+          <input type="text" id="inquiry-search" placeholder="🔍 搜尋..." oninput="renderSites('hydro_inquiry')">
+          <button onclick="addSite('hydro_inquiry')">+ 新增洽詢紀錄</button>
+        </div>
+        <div id="list-hydro_inquiry"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Step 3: 提交 ============ -->
+<div id="step3" class="submit-area" style="display:none">
+  <h2 style="margin:0 0 12px">📤 第三步:提交填報</h2>
+  <p style="color:#475569;margin:0 0 16px">確認所有資料無誤後,點下方按鈕下載填報 Excel,上傳至指定雲端資料夾。</p>
+  
+  <div class="confirm">
+    <input type="checkbox" id="confirm-check" onchange="onConfirmChange()">
+    <label for="confirm-check" style="margin:0;cursor:pointer">我已檢查所有案場資料無誤,可以下載填報檔</label>
+  </div>
+  
+  <button id="submit-btn" class="btn-success btn-large" onclick="downloadExcel()" disabled>
+    📥 下載填報 Excel
+  </button>
+  
+  <p style="margin-top:16px;font-size:13px;color:#64748b">
+    下載後請依現有作業流程,上傳至指定雲端資料夾
+  </p>
+</div>
+
+<div class="footer">
+  農田水利署 · 水域型農業綠能設置綠能設施管制考核計畫<br>
+  期別:11510　│　產生時間:2026-11-09T02:49:56.000Z
+</div>
+
+</div>
+
+<!-- 快照資料 -->
+<script type="application/json" id="snapshot-data">{"imported_at":"2026-11-09T02:49:56.000Z","source_files":[{"name":"雙週報管考_-農田水利署農業水域_圳路_農業水庫及埤塘_太陽光電盤點資料_1151020.xlsx","sheets_found":["solar_addendum"]}],"solar_addendum":[{"_idx":3,"_kind":"solar_addendum","order":"03","no":"1","mgmt":"桃園","contract_name":"桃園大圳幹線太陽光電發電系統計畫","site_progress":"施工中","vendor":"耀盈能源科技股份有限公司","site_name":"桃園大圳(18k-25k)","site_count":1,"capacity_mw":1.745475,"current_stage":"施工階段","sign_date":"110/10/01","install_deadline":"114/9/20及114/10/16\n(已於113/9/20及10/17與台電完成簽約，設置期限為電業簽約後1年)\n113/09/20:楊梅區田心段34、上田段474、蘆竹區後壁段1054、1089、798、800、998、觀音區中觀段1地號。\n113/10/16:新屋區富九段145地號。","expire_status":"未到期","current_operation":"113年9月9日(113)耀字第0909002號函，說明原日煬綠能科技股份有限公司經企業合併，相關權利義務由新設公司概括承受.\n廠商因暫時缺工尚未進場施工，目前持續確認廠商後續開工時程.(本處已於114年9月22日農水桃園字第1148245532號函說明將自9/21起計算逾期違約金)\n114/12/24進度：\n經計算本案逾期違約金已達契約規定使用費之20%，擬請律師辦理後續相關解約事宜。\n廠商已取得桃園市政府同意備案展延2次，本處業於115/3/24農水桃園字第1158211034號函同意展延期限。\n廠商於115/1/21、2/24及4/23提送施工計畫書(含修正版)，各委員審查後均無意見。\n廠商已於115/6/15、23召開施工前說明會，後續將進場施工。\n廠商已於115/7/25起進場施工。","difficulty":"-","team_suggestion":"","note":""},{"_idx":4,"_kind":"solar_addendum","order":"","no":"2","mgmt":"桃園","contract_name":"桃園大圳幹線太陽光電發電系統計畫","site_progress":"施工中","vendor":"耀盈能源科技股份有限公司","site_name":"坑子口圳","site_count":1,"capacity_mw":0.29415,"current_stage":"施工階段","sign_date":"110/10/01","install_deadline":"114/9/20及114/10/16\n(已於113/9/20及10/17與台電完成簽約，設置期限為電業簽約後1年)\n113/09/20:楊梅區田心段34、上田段474、蘆竹區後壁段1054、1089、798、800、998、觀音區中觀段1地號。\n113/10/16:新屋區富九段145地號。","expire_status":"未到期","current_operation":"113年9月9日(113)耀字第0909002號函，說明原日煬綠能科技股份有限公司經企業合併，相關權利義務由新設公司概括承受.\n廠商因暫時缺工尚未進場施工，目前持續確認廠商後續開工時程.(本處已於114年9月22日農水桃園字第1148245532號函說明將自9/21起計算逾期違約金)\n114/12/24進度：\n經計算本案逾期違約金已達契約規定使用費之20%，擬請律師辦理後續相關解約事宜。\n廠商已取得桃園市政府同意備案展延2次，本處業於115/3/24農水桃園字第1158211034號函同意展延期限。\n廠商於115/1/21、2/24及4/23提送施工計畫書(含修正版)，各委員審查後均無意見。\n廠商已於115/6/15、23召開施工前說明會，後續將進場施工。\n廠商已於115/7/25起進場施工。","difficulty":"","team_suggestion":"","note":""},{"_idx":5,"_kind":"solar_addendum","order":"04","no":"","mgmt":"石門","contract_name":"過嶺支渠太陽光電發電系統計畫","site_progress":"解約","vendor":"晶成科技股份有限公司","site_name":"過嶺支渠","site_count":1,"capacity_mw":0.55,"current_stage":"已解約","sign_date":"110/08/24","install_deadline":"114/11/20","expire_status":"未到期","current_operation":"1.114年2月12日召開綠能小組會議審查計畫書，結論請修正後再送本處\n2.完成計畫書修正，114年5月6日晶能源字第114050604號來文申請修正使用土地同意書用印，完成用印後送計畫書審查.\n3.114年5月22日晶能源字第11405220001號提送修正計劃書，各業務單位審查中.\n4.114/6/30進行綠能第二次審查會議，審查計畫書.結論再請廠商修正後再送本處審查.平鎮區高雙段因無法取得地方共識，廠商決定取消.\n5.114/8/21廠商到本處進行設計書圖的草稿審閱及討論.\n6.關於桃園市府對於後續公有土地推動意見，廠商114年8月29日晶能源字第114082952102號去文市府，函詢市府相關意見，以利後續推動工作之評估.\n7.桃園市政府114年9月8日府經公字第1140253814號函請廠商補充相關資料.\n114/12/23進度：晶成能源股份有限公司114年12月12日晶能源子第114121252101號函提送容許申請計劃書送本處辦理審查中。\n8.本案因規劃案場均有地方反對意見，無法建置光電，已和廠商辧理解約。\n本週進度相同_1150721\n過嶺支渠已解約1150817","difficulty":"-","team_suggestion":"","note":""},{"_idx":6,"_kind":"solar_addendum","order":"04","no":"3","mgmt":"石門","contract_name":"石門大圳(草湳坡段、二重溪段、東流段)太陽光電發電系統計畫","site_progress":"已併網-二重溪段、東流段\n停工中-草湳坡段","vendor":"耀盈能源科技股份有限公司","site_name":"石門大圳-草湳坡段","site_count":1,"capacity_mw":0.4941,"current_stage":"施工階段","sign_date":"110/08/24","install_deadline":"(原113/07/19)\n取得同意備案後，\n備案後未規定設置期限。","expire_status":"未到期","current_operation":"112/09/18召開本處綠能小組會議審查通過\n本案移樹計畫案經署核判暫緩辦理，112/10/25通知廠商本工區暫緩辦理，謹慎研議(農水石門字第1126283508號函)\n楊梅區公所函轉里辦公處申請石門大圳草湳坡段儘速進場建置以改善環境一案，本處業以113年12月5日農水石門字第1138275967號函復在案\n113年12月30日召開石門大圳(草湳坡段草湳坡小段)太陽光電建置(第二次)地方說明會\n114年2月12日召開本處綠能推動小組會議研商草湳坡段太陽光電案，結論為因反對連署，後續是否繼續辦理，請光電廠商審慎研議\n耀盈能源科技股份有限公司114年2月25日(114)耀字第0225001號函將繼續溝通協調.\n114/12/23進度：草湳坡段本週無新推動進度(二重溪段、東流段正常營運中)，本週無新進度。\n草湳坡段因地方反對無法進場作業，已於本處6月11日綠能推動工作小組會議中與廠商協商，不再繼續推動該案場之建置。\n本週進度相同_1150721\n二重溪段、東流段案場正常營運中1150817","difficulty":"-","team_suggestion":"","note":""},{"_idx":7,"_kind":"solar_addendum","order":"04","no":"4","mgmt":"石門","contract_name":"石門大圳上段用地太陽光電發電系統計畫","site_progress":"已併網","vendor":"耀盈能源科技股份有限公司","site_name":"石門大圳上段","site_count":1,"capacity_mw":2.63034,"current_stage":"已併網","sign_date":"111/04/07","install_deadline":"尚未取得電業簽約。設置期限為電業簽約後1年","expire_status":"未到期","current_operation":"台電公司協調細節作業中，免雜申請已取得，發包中，待施工，進場前準備中\n(用地各項電桿設施申請遷移中)\n114年3月4日辦理用地電桿、路燈遷移會勘\n114年3月25日辦理第二次地方說明會.\n114年4月1日將辦理用地電桿、路燈遷移第三次會勘.\n114/12/23進度：\n完成佈板作業申請台電併網，併網作業完成，辦理變更登記及 設備登記作業中。\n115年6月22日，本案因辦理變更修正計劃書作業，變更計劃書送署用印後送桃市府辦理審查。\n本週進度相同_1150721\n1150817_「石門大圳上段用地太陽光電發電系統計畫」石門大圳等23筆土地申請農業用地作太陽光電發電設施容許使用（第一次變更）案，桃園市政府經濟發展局原則同意函(115年8月14日桃經產字第1150043840號。)\n請耀盈能源科技股份有限公司向桃園市政府申請辧理設備登記作業。","difficulty":"-","team_suggestion":"","note":""},{"_idx":8,"_kind":"solar_addendum","order":"05","no":"5","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"坪林人工蓄水池","site_count":null,"capacity_mw":0.49987,"current_stage":"已解約","sign_date":"111/8/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"","team_suggestion":"","note":""},{"_idx":9,"_kind":"solar_addendum","order":"05","no":"6","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"港南大排1","site_count":1,"capacity_mw":0.49987,"current_stage":"已解約","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"-","team_suggestion":"","note":""},{"_idx":10,"_kind":"solar_addendum","order":"05","no":"7","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"港南大排2","site_count":1,"capacity_mw":0.49987,"current_stage":"已解約","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"","team_suggestion":"","note":""},{"_idx":11,"_kind":"solar_addendum","order":"05","no":"8","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"竹東圳幹線","site_count":1,"capacity_mw":0.0999,"current_stage":"已解約","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"","team_suggestion":"","note":""},{"_idx":12,"_kind":"solar_addendum","order":"05","no":"9","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"貓兒錠幹線","site_count":1,"capacity_mw":0.38554,"current_stage":"已解約","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"","team_suggestion":"","note":""},{"_idx":13,"_kind":"solar_addendum","order":"05","no":"10","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"貓兒錠大排1","site_count":1,"capacity_mw":0.35372,"current_stage":"已解約","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"","team_suggestion":"","note":""},{"_idx":14,"_kind":"solar_addendum","order":"05","no":"11","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"貓兒錠幹線8支線","site_count":1,"capacity_mw":0.45806,"current_stage":"已解約","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"","team_suggestion":"","note":""},{"_idx":15,"_kind":"solar_addendum","order":"05","no":"12","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"貓兒錠大排2","site_count":1,"capacity_mw":0.49987,"current_stage":"已解約","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"","team_suggestion":"","note":""},{"_idx":16,"_kind":"solar_addendum","order":"05","no":"13","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"翁厝南幹線","site_count":1,"capacity_mw":0.37222,"current_stage":"已解約","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"","team_suggestion":"","note":""},{"_idx":17,"_kind":"solar_addendum","order":"05","no":"14","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"澎湖窟圳","site_count":1,"capacity_mw":0.49987,"current_stage":"已解約","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"","team_suggestion":"","note":""},{"_idx":18,"_kind":"solar_addendum","order":"05","no":"15","mgmt":"新竹","contract_name":"竹東圳等8圳暨坪林人工蓄水池太陽能發電系統計畫","site_progress":"解約","vendor":"嘉昱能源有限公司","site_name":"澎湖窟圳3支線","site_count":1,"capacity_mw":0.0999,"current_stage":"已解約","sign_date":"111/08/30","install_deadline":"尚未取得同意備案。\n同意備案後250天,\n為設置期限。","expire_status":"未到期","current_operation":"114/12/22：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。\n115/02/03進度：廠商提出解除契約。\n115/05/21進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/06/18進度：管理處已詢問新竹縣政府，新竹縣政府現階段仍不予開放設置。解除契約中。\n115/07/21進度：新竹縣政府現階段仍不予開放設置。廠商提出解除契約。\n115年8月7日農水竹字第1158352379號函辦理解約。","difficulty":"","team_suggestion":"","note":""},{"_idx":19,"_kind":"solar_addendum","order":"09","no":"16","mgmt":"彰化","contract_name":"八堡一圳幹線太陽能發電系統計畫","site_progress":"規劃推動","vendor":"中租迪和股份有限公司","site_name":"八堡一圳","site_count":1,"capacity_mw":2.01411,"current_stage":"已解約","sign_date":"109/9/25","install_deadline":"原期限：113/12/5\n目前期限：復工後133日曆天","expire_status":"未到期","current_operation":"1.地方民意反對聲大，暫時無法推動.\n管理處114/2/4函文予廠商，俟八堡一圳案場欄杆修復完畢後，辦理解約程序.\n2.廠商已進場施作欄杆修復.\n3.因於112/5/26同意廠商暫緩施工，剩餘工期133日曆天，待取得共識後再行申請復工，故設置期限尚未到期.\n114/4/30廠商已完成水泥護欄修護部分.\n114/8/20造型欄杆修謢作業完成.\n預定9/20辦理會勘，確認造型欄杆是否修護完成.\n114/9/24廠商來函謢欄及欄杆修謢完成會勘紀錄，管理處簽核中(彰水1140924號).\n114/10/16辦理解約流程中(農水彰化字第1148548691號)。","difficulty":"","team_suggestion":"","note":""},{"_idx":20,"_kind":"solar_addendum","order":"09","no":"17","mgmt":"彰化","contract_name":"西溝支線太陽能發電系統計畫","site_progress":"規劃推動","vendor":"中租迪和股份有限公司","site_name":"西溝","site_count":1,"capacity_mw":0.44847,"current_stage":"已解約","sign_date":"109/9/25","install_deadline":"原期限：113/12/5\n目前期限：復工後133日曆天","expire_status":"未到期","current_operation":"地方民意反對聲大，暫時無法推動\n管理處114/2/4函文予廠商，俟八堡一圳案場欄杆修復完畢後，辦理解約程序\n因於112/5/26同意廠商暫緩施工，剩餘工期133日曆天，待取得共識後再行申請復工，故設置期限尚未到期.\n114/10/16辦理解約流程中(農水彰化字第1148548691號)。","difficulty":"","team_suggestion":"","note":""},{"_idx":21,"_kind":"solar_addendum","order":"10","no":"18","mgmt":"雲林","contract_name":"北港支線水井分線太陽光電發電系統計畫","site_progress":"申設中","vendor":"耀盈能源科技股份有限公司","site_name":"北港支線水系-北港支線一區","site_count":1,"capacity_mw":22.61655,"current_stage":"土地容許","sign_date":"110/12/29\n111/05/13\n(加地)","install_deadline":"114/4/21","expire_status":"已到期","current_operation":"113/10/24縣府同意廠商增設升壓站函文(因地段號需再請廠商修正)\n114/5/22進度：已取得電業籌設許可(經授能字第11400101110號)，尚有土地容許及施工許可、同意備案等未取得，展延程序辦理中。\n114/11/27進度：目前土地容許及施工許可、同意備案等未取得。\n114/12/10進度：目前土地容許及施工許可、同意備案等未取得。\n114/12/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/14進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/28進度：目前土地容許及施工許可、同意備案等未取得。\n115/02/03進度：目前土地容許及施工許可、同意備案等未取得。\n115/03/18進度：目前土地容許及施工許可、同意備案等未取得。\n115/05/25進度：目前土地容許及施工許可、同意備案等未取得。\n115/06/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/07/17進度：目前土地容許及施工許可、同意備案等未取得。(縣府6/5要求第三次補正，廠商7/2回覆縣府) \n115/08/17進度：目前土地容許及施工許可、同意備案等未取得。\n115/09/17進度：目前土地容許及施工許可、同意備案等未取得。(縣府7/16因廠商資料有誤要求第四次補正)","difficulty":"","team_suggestion":"","note":""},{"_idx":22,"_kind":"solar_addendum","order":"10","no":"19","mgmt":"雲林","contract_name":"北港支線水井分線太陽光電發電系統計畫","site_progress":"申設中","vendor":"耀盈能源科技股份有限公司","site_name":"北港支線水系-北港支線二區","site_count":1,"capacity_mw":3.64375,"current_stage":"土地容許","sign_date":"110/12/29","install_deadline":"114/4/21","expire_status":"已到期","current_operation":"113/10/24縣府同意廠商增設升壓站函文(因地段號需再請廠商修正)\n114/5/22進度：已取得電業籌設許可(經授能字第11400101110號)，尚有土地容許及施工許可、同意備案等未取得，展延程序辦理中。\n114/11/27進度：目前土地容許及施工許可、同意備案等未取得。\n114/12/10進度：目前土地容許及施工許可、同意備案等未取得。\n114/12/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/14進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/28進度：目前土地容許及施工許可、同意備案等未取得。\n115/02/03進度：目前土地容許及施工許可、同意備案等未取得。\n115/03/18進度：目前土地容許及施工許可、同意備案等未取得。\n115/05/25進度：目前土地容許及施工許可、同意備案等未取得。\n115/06/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/07/17進度：目前土地容許及施工許可、同意備案等未取得。(縣府6/5要求第三次補正，廠商7/2回覆縣府)\n115/08/17進度：目前土地容許及施工許可、同意備案等未取得。\n115/09/17進度：目前土地容許及施工許可、同意備案等未取得。(縣府7/16因廠商資料有誤要求第四次補正)","difficulty":"","team_suggestion":"","note":""},{"_idx":23,"_kind":"solar_addendum","order":"10","no":"20","mgmt":"雲林","contract_name":"北港支線水井分線太陽光電發電系統計畫","site_progress":"申設中","vendor":"耀盈能源科技股份有限公司","site_name":"北港支線水系-水井分線一區","site_count":1,"capacity_mw":1.8876,"current_stage":"土地容許","sign_date":"110/12/29","install_deadline":"114/4/21","expire_status":"已到期","current_operation":"113/10/24縣府同意廠商增設升壓站函文(因地段號需再請廠商修正)\n114/5/22進度：已取得電業籌設許可(經授能字第11400101110號)，尚有土地容許及施工許可、同意備案等未取得，展延程序辦理中。\n114/11/27進度：目前土地容許及施工許可、同意備案等未取得。\n114/12/10進度：目前土地容許及施工許可、同意備案等未取得。\n114/12/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/14進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/28進度：目前土地容許及施工許可、同意備案等未取得。\n115/02/03進度：目前土地容許及施工許可、同意備案等未取得。\n115/03/18進度：目前土地容許及施工許可、同意備案等未取得。\n115/05/25進度：目前土地容許及施工許可、同意備案等未取得。\n115/06/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/07/17進度：目前土地容許及施工許可、同意備案等未取得。(縣府6/5要求第三次補正，廠商7/2回覆縣府)\n115/08/17進度：目前土地容許及施工許可、同意備案等未取得。\n115/09/17進度：目前土地容許及施工許可、同意備案等未取得。(縣府7/16因廠商資料有誤要求第四次補正)","difficulty":"","team_suggestion":"","note":""},{"_idx":24,"_kind":"solar_addendum","order":"10","no":"21","mgmt":"雲林","contract_name":"北港支線水井分線太陽光電發電系統計畫","site_progress":"申設中","vendor":"耀盈能源科技股份有限公司","site_name":"北港支線水系-後溝子分線","site_count":1,"capacity_mw":3.4276,"current_stage":"土地容許","sign_date":"110/12/29","install_deadline":"114/4/21","expire_status":"已到期","current_operation":"113/10/24縣府同意廠商增設升壓站函文(因地段號需再請廠商修正)\n114/5/22進度：已取得電業籌設許可(經授能字第11400101110號)，尚有土地容許及施工許可、同意備案等未取得，展延程序辦理中。\n114/11/27進度：目前土地容許及施工許可、同意備案等未取得。\n114/12/10進度：目前土地容許及施工許可、同意備案等未取得。\n114/12/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/14進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/01/28進度：目前土地容許及施工許可、同意備案等未取得。\n115/02/03進度：目前土地容許及施工許可、同意備案等未取得。\n115/03/18進度：目前土地容許及施工許可、同意備案等未取得。\n115/05/25進度：目前土地容許及施工許可、同意備案等未取得。\n115/06/22進度：目前土地容許及施工許可、同意備案等未取得。\n115/07/17進度：目前土地容許及施工許可、同意備案等未取得。(縣府6/5要求第三次補正，廠商7/2回覆縣府)\n115/08/17進度：目前土地容許及施工許可、同意備案等未取得。\n115/09/17進度：目前土地容許及施工許可、同意備案等未取得。(縣府7/16因廠商資料有誤要求第四次補正)","difficulty":"","team_suggestion":"","note":""},{"_idx":25,"_kind":"solar_addendum","order":"10","no":"22","mgmt":"雲林","contract_name":"斗六大圳及濁幹線第三號進水口導水路太陽光電發電系統計畫案","site_progress":"施工中","vendor":"嘉昱能源有限公司","site_name":"斗六大圳","site_count":1,"capacity_mw":12,"current_stage":"土地容許","sign_date":"111/08/17","install_deadline":"原期限114/2/5\n(暫不計算履約期限)","expire_status":"已到期","current_operation":"114/02/13管理處向雲林縣政府確認仍在審核中，本處同意廠商俟取得非都市土地使用許可後，再依契約規定函送至本處辦理後續同意備案申請期間與施工工程期間之展延期限。\n114/5/27進度：土容申請審查中，待審查後申請展延(已有8個區段取得容許，尚有5區段仍在審查中)。\n114/6/11申請同意備案送件至今尚未取得，係因114/03/31日新頒訂「設置地面型太陽光電設施景觀及生態環境審定原則」，縣府函詢能源署本案適用範圍。\n114/10/21進度：取得土地容許2案。(剩5案未取得)\n114/11/5會議決議，其餘5案，2案林內鄉公所反對不做、3案古坑棋盤村民有諸多意見不做(農水雲林字第1148619556號)。\n114/11/27進度：縣府函詢署本部圳路容許使用範圍(114/11/21府建二字第1143949937號)。\n114/12/10進度：114/12/5古坑鄉棋盤村案場原結論為不予施作；惟為避免地方疑義，該公司決議全案防汛道路上方區域不再施作(容量約1.8MW)。為提升整體效益，該公司擬再與棋盤村村民溝通，研議是否依陳情意見調整為僅於棋盤村轄內圳路上方施作。\n114/12/22進度：縣府函詢署本部圳路容許使用範圍(114/11/21府建二字第1143949937號)。\n115/01/06進度：114/12/26取得同意備案(114/12/26府建行二字第1143954598、1143954606、1143954644、1143954759、1143954659、1143954661、1143954757、1143954712、1143954754、1143954591號)。\n115/01/14進度：同上。\n115/01/22進度：同上。\n115/01/28進度：同上。\n115/02/03進度：同上。\n115/03/18進度：同上。\n115/04/22進度：115/2/26農水雲林字第1158594489號同意本案併聯試運轉日期展延至115/11/10。施工前說明會辦理日期：115/3/3湖山里、梅林里。115/3/5東和村、新庄村。115/4/8烏塗村。廠商目前進度備料中。\n115/05/25進度：115/2/26農水雲林字第1158594489號同意本案併聯試運轉日期展延至115/11/10。廠商目前進度備料中。\n115/06/22進度：為順應地方要求改變工法地質鑽探採樣中。\n115/07/17進度：為順應地方要求改變工法地質鑽探採樣中。\n115/08/17進度：廠商進場整地。\n115/09/17進度：開挖光電基座。 \n115/10/19進度：光電基座建置中。","difficulty":"","team_suggestion":"","note":""},{"_idx":26,"_kind":"solar_addendum","order":"10","no":"23","mgmt":"雲林","contract_name":"濁幹線(三合里區段)太陽光電發電系統計畫案","site_progress":"申設中","vendor":"中租電力科技股份有限公司","site_name":"濁幹線(三合里)","site_count":1,"capacity_mw":10,"current_stage":"土地容許","sign_date":"112/04/17","install_deadline":"原期限114/2/5\n(暫不計算履約期限)","expire_status":"已到期","current_operation":"114/02/13廠商因未能依契約第五條之(二)於490日內取得土地容許，故廠商處於罰款累計狀態\n管理處決定，本處同意廠商待行政程序完成後再辦理設置期限展延，案場計畫書修正當中\n114/6進度：案場計畫書修正版送至本處審查，核定後將送縣府跑土地容許相關程序(農水雲林字第1148580762號)。\n114/11/27：在縣府進行土地容許案件申請。\n114/12/10：在縣府進行土地容許案件申請。\n114/12/22：在縣府進行土地容許案件申請。\n115/01/14：在縣府進行土地容許案件申請。\n115/01/22：在縣府進行土地容許案件申請。\n115/01/28：在縣府進行土地容許案件申請。\n115/02/03：在縣府進行土地容許案件申請。\n115/03/18：在縣府進行土地容許案件申請。\n115/05/25進度：雲林縣政府土地容許使用申請通過(5案)。(雲林縣政府115年5月13日府建行一字第1153916115號、雲林縣政府115年5月13日府建行一字第1153916118號、雲林縣政府115年5月13日府建行一字第1153916121號、雲林縣政府115年5月13日府建行一字第1153916122號、雲林縣政府115年5月14日府建行一字第1153916110號)\n115/06/22進度：雲林縣政府土地容許使用已通過申請(5案)。目前廠商申請展延作業中。\n115/07/17進度：雲林縣政府土地容許使用已通過申請(5案)。目前廠商申請展延作業中。\n115/08/17進度：雲林縣政府土地容許使用已通過申請(5案)。目前廠商申請展延作業中。\n115/09/17進度：雲林縣政府土地容許使用已通過申請(5案)。目前廠商申請展延作業中。","difficulty":"","team_suggestion":"","note":"1.案場計畫書要給管理處核定，但因為尚未寫完，所以沒有核定版案場計畫書。\n2.管理處需要核定版案場計畫書，才會核發使用地主管機關同意函。\n3.縣市政府需要使用地主管機關同意函及核定版計畫書，才會核發土地容許。"},{"_idx":27,"_kind":"solar_addendum","order":"11","no":"24","mgmt":"嘉南","contract_name":"烏山頭水庫水面型第二期太陽光電發電系統計畫","site_progress":"申設中","vendor":"星曄綠能股份有限公司","site_name":"烏山頭水庫(二期)","site_count":1,"capacity_mw":13.294,"current_stage":"電業籌設","sign_date":"112/03/22","install_deadline":"114/9/11","expire_status":"未到期","current_operation":"1.112.6.30台南市議員提案建請市府不應同意轄內民生用水的水庫設置太陽光電發電系統，保證民眾用水安全\n2.依臺南市府經濟發展局113.9.30函，於民生用水水庫建置太陽光電，地方有意見，請貴公司本於敦親睦鄰原則，妥善加強地方溝通協調，並檢附溝通文件後再行續辦\n3.承租廠商於114年1月10日來訪表示，已拜會議員及里長，後續將朝取得議員及地方共識，如欲繼續執行，才會召開地方說明會\n114/11/13進度：尚未取得地方共識，廠商來文申請展延(農水嘉南字第1148641933號)，基於契約管理需要，原則同意展延，惟確切展延日數仍須依契約條款及相關證據審認後，另依契約規定以書面通知,本週無進度。\n115/03/16進度：已於115/03/04終止租約。","difficulty":"-","team_suggestion":"","note":""},{"_idx":28,"_kind":"solar_addendum","order":"13","no":"","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"解約","vendor":"中租迪和股份有限公司","site_name":"東圳第一中排","site_count":1,"capacity_mw":3.5169,"current_stage":"已解約","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114/12/22進度：\n土地容許資料本處已核定通過，目前送至縣府審查中。\n115/05/21進度：本週無新進度\n1150604辦理第六次檢討會議後撤銷本案","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦\n1150604辦理第六次檢討會議後撤銷本案","team_suggestion":"","note":""},{"_idx":29,"_kind":"solar_addendum","order":"13","no":"","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"解約","vendor":"中租迪和股份有限公司","site_name":"廣安圳導水路(下游)","site_count":1,"capacity_mw":2.303157,"current_stage":"已解約","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114/12/22進度：\n土地容許資料本處已核定通過，目前送至縣府審查中。\n115/05/21進度：本週無新進度\n1150604辦理第六次檢討會議後撤銷本案","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦\n1150604辦理第六次檢討會議後撤銷本案","team_suggestion":"","note":""},{"_idx":30,"_kind":"solar_addendum","order":"13","no":"","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"解約","vendor":"中租迪和股份有限公司","site_name":"石頭埤排水","site_count":1,"capacity_mw":0.4827,"current_stage":"已解約","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114/12/22進度：\n土地容許資料本處已核定通過，目前送至縣府審查中。\n115/05/21進度：本週無新進度\n1150604辦理第六次檢討會議後撤銷本案","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦\n1150604辦理第六次檢討會議後撤銷本案","team_suggestion":"","note":""},{"_idx":31,"_kind":"solar_addendum","order":"13","no":"","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"解約","vendor":"中租迪和股份有限公司","site_name":"濫圳幹線","site_count":1,"capacity_mw":1.105,"current_stage":"已解約","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114/12/22進度：\n土地容許資料本處已核定通過，目前送至縣府審查中。\n115/05/21進度：本週無新進度\n1150604辦理第六次檢討會議後撤銷本案","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦\n1150604辦理第六次檢討會議後撤銷本案","team_suggestion":"","note":""},{"_idx":32,"_kind":"solar_addendum","order":"13","no":"","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"解約","vendor":"中租迪和股份有限公司","site_name":"濫圳中排2","site_count":1,"capacity_mw":0.3405,"current_stage":"已解約","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114/12/22進度：\n土地容許資料本處已核定通過，目前送至縣府審查中。\n115/05/21進度：本週無新進度\n1150604辦理第六次檢討會議後撤銷本案","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦\n1150604辦理第六次檢討會議後撤銷本案","team_suggestion":"","note":""},{"_idx":33,"_kind":"solar_addendum","order":"13","no":"","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"解約","vendor":"中租迪和股份有限公司","site_name":"萬丹圳四支線、萬丹圳四支線小給二之一","site_count":1,"capacity_mw":0.5388,"current_stage":"已解約","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114/12/22進度：\n土地容許資料本處已核定通過，目前送至縣府審查中。\n115/05/21進度：本週無新進度\n1150604辦理第六次檢討會議後撤銷本案","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦\n1150604辦理第六次檢討會議後撤銷本案","team_suggestion":"","note":""},{"_idx":34,"_kind":"solar_addendum","order":"13","no":"","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"解約","vendor":"中租迪和股份有限公司","site_name":"萬丹圳幹線(一期)","site_count":1,"capacity_mw":0.464,"current_stage":"已解約","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114/12/22進度：\n土地容許資料本處已核定通過，目前送至縣府審查中。\n115/05/21進度：本週無新進度\n1150604辦理第六次檢討會議後撤銷本案","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦\n1150604辦理第六次檢討會議後撤銷本案","team_suggestion":"","note":""},{"_idx":35,"_kind":"solar_addendum","order":"13","no":"25","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"萬丹圳幹線(二期)","site_count":1,"capacity_mw":1.0692,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114/12/22進度：\n土地容許資料本處已核定通過，目前送至縣府審查中。\n115/05/21進度：本週無新進度","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦","team_suggestion":"","note":""},{"_idx":36,"_kind":"solar_addendum","order":"13","no":"26","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"萬丹圳幹線(三期)","site_count":1,"capacity_mw":0.533,"current_stage":"土地容許","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114年7月31日屏東縣致府回文(屏府城工字第1140205933號)與農水署確認施作疑義.\n114年9月17日農水署發文(農水企字第1148015079號)請屏東處研析近1年多以來本案場實際辦理情形及地方反映意見.\n114年10月03日屏東處與廠商協商重新確認地方意見，簽署同意書事宜.\n114年10月20日廠商已辦理說明會並取得簽署書.\n114/12/22進度：廠商是否簽署清冊彙整中。\n115/05/21進度：本週無新進度","difficulty":"已先針對案件內未取得鄰近地主同意之申請地號取消，先以已取得鄰近地主同意之土地再送至屏東縣政府進行審核。","team_suggestion":"","note":""},{"_idx":37,"_kind":"solar_addendum","order":"13","no":"","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"解約","vendor":"中租迪和股份有限公司","site_name":"萬丹圳第六支線中排二(四期)","site_count":1,"capacity_mw":0.4488,"current_stage":"已解約","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114/12/22進度：\n土地容許資料本處已核定通過，目前送至縣府審查中。\n115/05/21進度：本週無新進度\n1150604辦理第六次檢討會議後撤銷本案","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦\n1150604辦理第六次檢討會議後撤銷本案","team_suggestion":"","note":""},{"_idx":38,"_kind":"solar_addendum","order":"13","no":"","mgmt":"屏東","contract_name":"東圳第一中排等圳路太陽光電發電系統計畫","site_progress":"解約","vendor":"中租迪和股份有限公司","site_name":"萬丹圳第九支線中排四、萬丹圳第六支線小排四之九、萬丹圳第六支線","site_count":1,"capacity_mw":1.1333,"current_stage":"已解約","sign_date":"112/06/20","install_deadline":"115/6/20","expire_status":"未到期","current_operation":"契約將於114年6月到期，目前萬丹圳幹線(三期)於113年11月15日取得台電併聯審查函，\n經處內與廠商會議討論後決議，設置期限由原114年6月20日展延至115年6月19日(農水屏東字第1148786812號)，廠商繳費文件已提供.\n114/12/22進度：\n土地容許資料本處已核定通過，目前送至縣府審查中。\n115/05/21進度：本週無新進度\n1150604辦理第六次檢討會議後撤銷本案","difficulty":"俟屏東縣政府審核萬丹圳三期有相關進展後會再續辦\n1150604辦理第六次檢討會議後撤銷本案","team_suggestion":"","note":""},{"_idx":39,"_kind":"solar_addendum","order":"15","no":"27","mgmt":"花蓮","contract_name":"溪口排水圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"頂晶科技股份有限公司","site_name":"溪口排水(第一型).(第三型)","site_count":1,"capacity_mw":3.9997,"current_stage":"併聯審查","sign_date":"110/10/06","install_deadline":"116/3/11","expire_status":"未到期","current_operation":"管理處圳路改善工程尚未完成驗收，廠商須於復工後，1個月內取得所有申設資料，若未取得則與廠商解約.\n本處工務組訂於114年5月23日進行圳路改善工程驗收.\n114/6/12 圳路強化工程已完成驗收，待決算驗收證明副知本組後，即通知廠商復工並依契約相關規定辦理.\n114/6/19 函請廠商於收到書面通知後立即復工\n114/07/23 廠商申請展延第一階段使用期限,並提供參考依據(114年7月15日(114)和字第1140700167號函) .\n經諮詢律師和字第1140700167號函後，召開綠能推動專責小組第12次會議討論溪口排水廠商申請展延第一階段使用期限案，結論待與廠商協議是否合意展延.(因與會人數不足，無決議)\n114年11月5日再召開會議討論是否准予展延.\n經本專責小組討論後原則同意展延一年並具切結書若無法於期限內取得相關證執照願依契約第三條第一項第一款規定終止契約 。(第14次會議紀錄)\n114/12/22進度：本週無進度。\n115/05/25進度：115年3月31日農水花蓮字第1158897471號函同意展延第一階段使用期間由115年3月12日起至116年3月11日止。\n115/06/24進度：115年6月1日農水花蓮字第1158883553號函檢送非都市土地容許使用證明文件至花蓮縣政府。\n115/07/17：無進度\n115/10/16：花蓮縣政府觀光處來電說明，應先取得縣政府同意支持文件，已通知廠商相關內容。","difficulty":"-","team_suggestion":"","note":""},{"_idx":40,"_kind":"solar_addendum","order":"15","no":"28","mgmt":"花蓮","contract_name":"太平渠圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"太平渠幹線(高寮段)","site_count":1,"capacity_mw":0.40406,"current_stage":"併聯審查","sign_date":"112/03/16","install_deadline":"116/5/31","expire_status":"未到期","current_operation":"114/2/24通知廠商第一階段二年期限即將屆，請廠商評估是否繼續執行契約，如需繼續請依相關規定申請展期\n廠商尚未取得地方居民同意，待取得後，向市府申請土地容許，廠商評估是否申請展延中.\n3/26函文廠商同意展延第一階段使用期間(農水花蓮字第1148870723號)，4/9函請廠商繳納第一階段第一次展延(6個月)場地使用費(農水花蓮字第1148897420號).\n本處於114/8/26發函通知廠商第一階段使用期限第一次展期即將屆滿(農水花蓮字第1148897774號函)\n花蓮處已同意第一階段使用期限第二次展延(農水花蓮字第1148873560號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年4月17日辦理第一階段履約進度檢討會議，與廠商協議原則同意展延期限至116年5月31日止，惟須取得公證後切結書使得生效。\n115/06/24進度：115月6月9日農水花蓮字第1158883605號函同意第一階段展延由115年3月26日起至116年5月31日止。\n115/07/17：無進度","difficulty":"-","team_suggestion":"","note":""},{"_idx":41,"_kind":"solar_addendum","order":"15","no":"29","mgmt":"花蓮","contract_name":"太平渠圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"太平渠幹線(泰林段)","site_count":1,"capacity_mw":0.310165,"current_stage":"土地容許","sign_date":"112/03/16","install_deadline":"116/5/31","expire_status":"未到期","current_operation":"114/2/24通知廠商第一階段二年期限即將屆，請廠商評估是否繼續執行契約，如需繼續請依相關規定申請展期\n廠商尚未取得地方居民同意，待取得後，向市府申請土地容許，廠商評估是否申請展延中.\n3/26函文廠商同意展延第一階段使用期間(農水花蓮字第1148870723號)，4/9函請廠商繳納第一階段第一次展延(6個月)場地使用費(農水花蓮字第1148897420號).\n本處於114/8/26發函通知廠商第一階段使用期限第一次展期即將屆滿(農水花蓮字第1148897774號函)\n花蓮處已同意第一階段使用期限第二次展延(農水花蓮字第1148873560號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年4月17日辦理第一階段履約進度檢討會議，與廠商協議原則同意展延期限至116年5月31日止，惟須取得公證後切結書使得生效。\n115/06/24進度：115月6月9日農水花蓮字第1158883605號函同意第一階段展延由115年3月26日起至116年5月31日止。\n115/07/17：無進度","difficulty":"","team_suggestion":"","note":""},{"_idx":42,"_kind":"solar_addendum","order":"15","no":"30","mgmt":"花蓮","contract_name":"太平渠圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"太平渠幹線(神農段)","site_count":1,"capacity_mw":0.198025,"current_stage":"土地容許","sign_date":"112/03/16","install_deadline":"116/5/31","expire_status":"未到期","current_operation":"114/2/24通知廠商第一階段二年期限即將屆，請廠商評估是否繼續執行契約，如需繼續請依相關規定申請展期\n廠商尚未取得地方居民同意，待取得後，向市府申請土地容許，廠商評估是否申請展延中.\n3/26函文廠商同意展延第一階段使用期間(農水花蓮字第1148870723號)，4/9函請廠商繳納第一階段第一次展延(6個月)場地使用費(農水花蓮字第1148897420號).\n本處於114/8/26發函通知廠商第一階段使用期限第一次展期即將屆滿(農水花蓮字第1148897774號函)\n花蓮處已同意第一階段使用期限第二次展延(農水花蓮字第1148873560號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年4月17日辦理第一階段履約進度檢討會議，與廠商協議原則同意展延期限至116年5月31日止，惟須取得公證後切結書使得生效。\n115/06/24進度：115月6月9日農水花蓮字第1158883605號函同意第一階段展延由115年3月26日起至116年5月31日止。\n115/07/17：無進度","difficulty":"","team_suggestion":"","note":""},{"_idx":43,"_kind":"solar_addendum","order":"15","no":"31","mgmt":"花蓮","contract_name":"太平渠圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"太平渠幹線(哈拉灣段)","site_count":1,"capacity_mw":1.49876,"current_stage":"土地容許","sign_date":"112/03/16","install_deadline":"116/5/31","expire_status":"未到期","current_operation":"114/2/24通知廠商第一階段二年期限即將屆，請廠商評估是否繼續執行契約，如需繼續請依相關規定申請展期\n廠商尚未取得地方居民同意，待取得後，向市府申請土地容許，廠商評估是否申請展延中.\n3/26函文廠商同意展延第一階段使用期間(農水花蓮字第1148870723號)，4/9函請廠商繳納第一階段第一次展延(6個月)場地使用費(農水花蓮字第1148897420號).\n本處於114/8/26發函通知廠商第一階段使用期限第一次展期即將屆滿(農水花蓮字第1148897774號函)\n花蓮處已同意第一階段使用期限第二次展延(農水花蓮字第1148873560號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年4月17日辦理第一階段履約進度檢討會議，與廠商協議原則同意展延期限至116年5月31日止，惟須取得公證後切結書使得生效。\n115/06/24進度：115月6月9日農水花蓮字第1158883605號函同意第一階段展延由115年3月26日起至116年5月31日止。\n115/07/17：無進度","difficulty":"","team_suggestion":"","note":""},{"_idx":44,"_kind":"solar_addendum","order":"15","no":"32","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"源城排水","site_count":1,"capacity_mw":2.677,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。\n115/07/17：無進度","difficulty":"","team_suggestion":"","note":""},{"_idx":45,"_kind":"solar_addendum","order":"15","no":"33","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"新城圳幹線","site_count":1,"capacity_mw":0.821,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。\n115/07/17：無進度","difficulty":"","team_suggestion":"","note":""},{"_idx":46,"_kind":"solar_addendum","order":"15","no":"34","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"豐裡排水","site_count":1,"capacity_mw":0.547,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。\n115/07/17：無進度","difficulty":"","team_suggestion":"","note":""},{"_idx":47,"_kind":"solar_addendum","order":"15","no":"35","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"林田圳幹線","site_count":1,"capacity_mw":0.747,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。\n115/07/17：無進度","difficulty":"","team_suggestion":"","note":""},{"_idx":48,"_kind":"solar_addendum","order":"15","no":"36","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"吉安圳","site_count":1,"capacity_mw":3.1888,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。\n115/07/17：無進度","difficulty":"","team_suggestion":"","note":""},{"_idx":49,"_kind":"solar_addendum","order":"15","no":"37","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"林田圳2支線","site_count":1,"capacity_mw":1.309,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。\n115/07/17：無進度","difficulty":"","team_suggestion":"","note":""},{"_idx":50,"_kind":"solar_addendum","order":"15","no":"38","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"豐村圳2支線","site_count":1,"capacity_mw":0.8637,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。\n115/07/17：無進度","difficulty":"","team_suggestion":"","note":""},{"_idx":51,"_kind":"solar_addendum","order":"15","no":"39","mgmt":"花蓮","contract_name":"花蓮管理處圳路型太陽光電發電系統計畫","site_progress":"申設中","vendor":"中租迪和股份有限公司","site_name":"平林圳林榮支線","site_count":1,"capacity_mw":1.79,"current_stage":"土地容許","sign_date":"112/09/22","install_deadline":"115/9/21","expire_status":"未到期","current_operation":"廠商尚未取得土地容許.本處於114/9/2通知廠商第一階段使用期限即將屆滿2年(農水花蓮字第1148897788號函).\n花蓮處已同意第一階段使用期限第一次展延(農水花蓮字第1148873562號)。\n114/12/22進度：本週無進度。\n115/05/25進度：115年5月8日農水花蓮字第1158871228號函同意第一階段第二次展延由115年3月22日起至115年9月21日止。\n115/07/17：無進度","difficulty":"-","team_suggestion":"","note":""}],"hydro_tender":[],"hydro_test":[],"hydro_potential":[],"hydro_inquiry":[]}</script>
+<script type="application/json" id="snapshot-metadata">{"period":"11510","created_at":"2026-11-09T02:49:56.000Z","snapshot_date":"2026-10-20","snapshot_source":"雙週報管考_-農田水利署農業水域_圳路_農業水庫及埤塘_太陽光電盤點資料_1151020.xlsx（附件一   各管理處推動太陽光電案件辦理情形_篩選版_1020）"}</script>
+
+<script>
+// =============================================================
+// 月報填報頁面邏輯(Stage C - 5 個 sheet 完整版)
+// =============================================================
+
+const SNAPSHOT = JSON.parse(document.getElementById('snapshot-data').textContent);
+const METADATA = JSON.parse(document.getElementById('snapshot-metadata').textContent);
+
+// 太陽光電「案場進度」可能的值
+const SOLAR_PROGRESS_OPTIONS = ['申設中', '待施工', '規劃推動', '已併網-混合', '已併網'];
+// 太陽光電「目前階段」可能的值
+const SOLAR_STAGE_OPTIONS = ['土地容許', '施工階段', '併聯審查', '已解約', '尚未送件', '已併網', '併聯審查(未送)', '電業籌設'];
+// 洽詢方式
+const INQUIRY_METHODS = ['電話', '拜訪', '來函', '會勘', '其他'];
+// 洽詢類型
+const INQUIRY_TYPES = ['測試', '招標', '其他'];
+// 11 個審查欄位 key
+const REVIEW_FIELDS = [
+  { key: 'feeder', label: '饋線保留' },
+  { key: 'internal_review', label: '管理處內部審查' },
+  { key: 'taipower_review', label: '台電併聯審查' },
+  { key: 'water_right', label: '水權申請' },
+  { key: 'water_structure', label: '水利建造物申請' },
+  { key: 'soil_conservation', label: '水保計畫申請' },
+  { key: 'land_permit', label: '土地容許(含農業變更)' },
+  { key: 'electric_setup', label: '電業籌設' },
+  { key: 'consent_filed', label: '同意備案' },
+  { key: 'briefing', label: '說明會' },
+  { key: 'construction_permit', label: '施工許可' }
+];
+
+// 全域狀態
+const state = {
+  mgmt: '',
+  fillerName: '',
+  fillerPhone: '',
+  category: 'solar',        // 'solar' or 'hydro'
+  hydroSubtab: 'hydro_tender',
+  data: {
+    solar_addendum: [],
+    hydro_tender: [],
+    hydro_test: [],
+    hydro_potential: [],
+    hydro_inquiry: []
+  }
+};
+
+let _newIdCounter = 0;
+function nextNewId() { _newIdCounter++; return 'NEW_' + String(_newIdCounter).padStart(3, '0'); }
+
+function htmlEscape(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+}
+
+function isModified(s) {
+  if (s._new || s._deleted) return false;
+  const current = { ...s };
+  delete current._kind; delete current._idx; delete current._id;
+  delete current._new; delete current._deleted; delete current._original;
+  try {
+    return JSON.stringify(current) !== s._original;
+  } catch(e) { return false; }
+}
+
+// 管理處改變 → 載入該處 5 種資料
+function onMgmtChange() {
+  const sel = document.getElementById('mgmt-select');
+  const mgmt = sel.value;
+  state.mgmt = mgmt;
+  
+  if (!mgmt) {
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('step3').style.display = 'none';
+    return;
+  }
+  
+  // 從 snapshot 撈出該處的所有資料 - 注意 mgmt 名稱可能有「台中/臺中」差異,做寬鬆比對
+  const mgmtMatch = (a, b) => {
+    if (!a || !b) return false;
+    const norm = s => s.replace(/^台/, '臺');  // 統一用「臺」
+    return norm(a) === norm(b);
+  };
+  
+  ['solar_addendum', 'hydro_tender', 'hydro_test', 'hydro_potential', 'hydro_inquiry'].forEach(key => {
+    state.data[key] = (SNAPSHOT[key] || []).filter(s => mgmtMatch(s.mgmt, mgmt)).map((s, i) => ({
+      ...s,
+      _idx: i,
+      _id: key + '_' + i,
+      _new: false,
+      _deleted: false,
+      _original: JSON.stringify(s)
+    }));
+  });
+  
+  document.getElementById('step2').style.display = '';
+  document.getElementById('step3').style.display = '';
+  
+  // 預設顯示太陽光電
+  switchCategory('solar');
+}
+
+// 切換 L1 Tab(太陽光電 / 小水力)
+function switchCategory(cat) {
+  state.category = cat;
+  document.getElementById('tab-solar').classList.toggle('active', cat === 'solar');
+  document.getElementById('tab-hydro').classList.toggle('active', cat === 'hydro');
+  document.getElementById('content-solar').style.display = cat === 'solar' ? '' : 'none';
+  document.getElementById('content-hydro').style.display = cat === 'hydro' ? '' : 'none';
+  renderAll();
+}
+
+// 切換 L2 子分頁(招標/測試/潛力/洽詢)
+function switchHydroSubtab(key) {
+  state.hydroSubtab = key;
+  const map = { hydro_tender: 'tender', hydro_test: 'test', hydro_potential: 'potential', hydro_inquiry: 'inquiry' };
+  Object.entries(map).forEach(([k, suffix]) => {
+    document.getElementById('subtab-' + suffix).classList.toggle('active', k === key);
+    document.getElementById('sub-' + suffix).style.display = k === key ? '' : 'none';
+  });
+  renderSites(key);
+}
+
+// 重渲染所有
+function renderAll() {
+  ['solar_addendum', 'hydro_tender', 'hydro_test', 'hydro_potential', 'hydro_inquiry'].forEach(renderSites);
+  updateCounts();
+}
+
+function updateCounts() {
+  const solarTotal = state.data.solar_addendum.filter(s => !s._deleted).length;
+  const hydroTotal = state.data.hydro_tender.filter(s=>!s._deleted).length + 
+                     state.data.hydro_test.filter(s=>!s._deleted).length + 
+                     state.data.hydro_potential.filter(s=>!s._deleted).length + 
+                     state.data.hydro_inquiry.filter(s=>!s._deleted).length;
+  document.getElementById('tab-solar-count').textContent = '(' + solarTotal + ')';
+  document.getElementById('tab-hydro-count').textContent = '(' + hydroTotal + ')';
+  document.getElementById('subtab-tender-count').textContent = state.data.hydro_tender.filter(s=>!s._deleted).length;
+  document.getElementById('subtab-test-count').textContent = state.data.hydro_test.filter(s=>!s._deleted).length;
+  document.getElementById('subtab-potential-count').textContent = state.data.hydro_potential.filter(s=>!s._deleted).length;
+  document.getElementById('subtab-inquiry-count').textContent = state.data.hydro_inquiry.filter(s=>!s._deleted).length;
+}
+
+// 編輯欄位
+function updateField(key, id, field, value) {
+  const arr = state.data[key];
+  const s = arr.find(x => x._id === id);
+  if (!s) return;
+  // 數字欄位轉型
+  if (['capacity_mw', 'capacity_kw', 'site_count', 'unit_count', 'unit_capacity_kw', 'estimated_capacity_kw'].includes(field)) {
+    s[field] = value === '' ? null : parseFloat(value);
+  } else {
+    s[field] = value;
+  }
+  // 更新計數(可能改了刪除狀態以外的)
+  updateCounts();
+}
+
+// 切換刪除狀態
+function toggleDelete(key, id) {
+  const arr = state.data[key];
+  const idx = arr.findIndex(x => x._id === id);
+  if (idx < 0) return;
+  const s = arr[idx];
+  if (s._new) {
+    arr.splice(idx, 1);
+  } else {
+    s._deleted = !s._deleted;
+  }
+  renderSites(key);
+  updateCounts();
+}
+
+// 11 個審查欄位的快速插入
+function insertSymbol(key, id, field, symbol) {
+  updateField(key, id, field, symbol);
+  // 更新對應 textarea
+  const ta = document.querySelector(`textarea[data-card="${id}"][data-field="${field}"]`);
+  if (ta) ta.value = symbol;
+  // 重渲染這張卡(badge 更新)
+  renderSites(key);
+}
+
+// 新增案場
+function addSite(key) {
+  const templates = {
+    solar_addendum: {
+      contract_name: '', site_progress: '', vendor: '', site_name: '', site_count: null,
+      capacity_mw: null, current_stage: '', sign_date: '', install_deadline: '',
+      expire_status: '', current_operation: '', difficulty: '', team_suggestion: '', note: ''
+    },
+    hydro_tender: {
+      county: '', township: '', land_section: '', land_no: '', contract_name: '', case_name: '',
+      capacity_kw: null, unit_count: null, unit_capacity_kw: null,
+      tender_period: '', sign_date: '',
+      feeder: '', internal_review: '', taipower_review: '', water_right: '', water_structure: '',
+      soil_conservation: '', land_permit: '', electric_setup: '', consent_filed: '',
+      briefing: '', construction_permit: '',
+      estimated_completion: '', vendor: '', operation: '', difficulty: '', planned_next: '', note: ''
+    },
+    hydro_test: {
+      county: '', township: '', land_section: '', land_no: '', channel_name: '',
+      capacity_kw: null, pile_no: '', unit_count: null, unit_capacity_kw: null,
+      test_apply_from: '', test_apply_to: '', sign_date: '',
+      internal_review: '', actual_test_date: '', vendor: '', operation: '',
+      planned_next: '', note: ''
+    },
+    hydro_potential: {
+      county: '', township: '', land_section: '', land_no: '', channel_name: '',
+      pile_no: '', estimated_capacity_kw: null, note: '', progress: '', version_type: ''
+    },
+    hydro_inquiry: {
+      inquiry_date: '', inquiry_unit: '', name: '', inquiry_method: '', inquiry_type: '',
+      inquiry_content: '', handling_status: '', closure_date: ''
+    }
+  };
+  
+  state.data[key].push({
+    _kind: key, _idx: -1, _id: nextNewId(), _new: true, _deleted: false, _original: '',
+    mgmt: state.mgmt,
+    ...templates[key]
+  });
+  renderSites(key);
+  updateCounts();
+  // 滾到新案場
+  setTimeout(() => {
+    const cards = document.querySelectorAll('#list-' + key + ' .site-card');
+    const last = cards[cards.length - 1];
+    if (last) last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 50);
+}
+
+// 通用 renderSites 入口
+function renderSites(key) {
+  const container = document.getElementById('list-' + key);
+  if (!container) return;
+  
+  const searchInputId = {
+    solar_addendum: 'solar-search',
+    hydro_tender: 'tender-search',
+    hydro_test: 'test-search',
+    hydro_potential: 'potential-search',
+    hydro_inquiry: 'inquiry-search'
+  }[key];
+  const search = (document.getElementById(searchInputId)?.value || '').toLowerCase();
+  
+  let filtered = state.data[key];
+  if (search) {
+    filtered = filtered.filter(s => {
+      // 不同類型 sheet 用不同欄位搜尋
+      const blob = [
+        s.site_name, s.case_name, s.channel_name, s.contract_name, 
+        s.vendor, s.inquiry_unit, s.inquiry_content
+      ].filter(Boolean).join(' ').toLowerCase();
+      return blob.includes(search);
+    });
+  }
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty">' + (search ? '沒有符合搜尋的案場' : '此管理處目前沒有資料,可點上方「+ 新增」按鈕新增') + '</div>';
+    return;
+  }
+  
+  container.innerHTML = filtered.map(s => renderCard(key, s)).join('');
+}
+
+// 依 key 分派到不同的卡片渲染函式
+function renderCard(key, s) {
+  let badge = '';
+  if (s._new) badge = '<span class="status-badge status-new">+ 新增</span>';
+  else if (s._deleted) badge = '<span class="status-badge status-deleted">已刪除</span>';
+  else if (isModified(s)) badge = '<span class="status-badge status-modified">已修改</span>';
+  
+  const titleField = {
+    solar_addendum: s.site_name || s.contract_name,
+    hydro_tender: s.case_name || s.contract_name,
+    hydro_test: s.channel_name,
+    hydro_potential: s.channel_name,
+    hydro_inquiry: s.inquiry_unit
+  }[key] || '(尚未命名)';
+  
+  const cardOpen = `<div class="site-card ${s._new?'new':''}${s._deleted?' deleted':''}" data-id="${s._id}">
+    <div class="site-card-header">
+      <div class="site-card-title">${htmlEscape(titleField)} ${badge}</div>
+      <button class="btn-danger" onclick="toggleDelete('${key}', '${s._id}')">${s._deleted?'↺ 還原':'🗑 刪除'}</button>
+    </div>`;
+  const cardClose = `</div>`;
+  
+  if (s._deleted) return cardOpen + cardClose;
+  
+  let body = '';
+  if (key === 'solar_addendum')      body = renderSolarFields(s);
+  else if (key === 'hydro_tender')   body = renderTenderFields(s);
+  else if (key === 'hydro_test')     body = renderTestFields(s);
+  else if (key === 'hydro_potential')body = renderPotentialFields(s);
+  else if (key === 'hydro_inquiry')  body = renderInquiryFields(s);
+  
+  return cardOpen + body + cardClose;
+}
+
+// helper: 一般文字欄位
+function inp(key, id, field, value, type) {
+  type = type || 'text';
+  return `<input type="${type}" value="${htmlEscape(value)}" oninput="updateField('${key}','${id}','${field}',this.value)">`;
+}
+function ta(key, id, field, value, rows) {
+  return `<textarea rows="${rows||3}" oninput="updateField('${key}','${id}','${field}',this.value)">${htmlEscape(value)}</textarea>`;
+}
+function sel(key, id, field, value, options) {
+  return `<select onchange="updateField('${key}','${id}','${field}',this.value)">
+    <option value="">(請選擇)</option>
+    ${options.map(o => `<option value="${o}"${value===o?' selected':''}>${o}</option>`).join('')}
+  </select>`;
+}
+
+// 太陽光電(附件一)
+function renderSolarFields(s) {
+  return `
+    <div class="grid grid-1"><div>
+      <label>案場名稱<span class="req">*</span></label>
+      ${inp('solar_addendum', s._id, 'site_name', s.site_name)}
+    </div></div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>契約名稱</label>${inp('solar_addendum', s._id, 'contract_name', s.contract_name)}</div>
+      <div><label>設置廠商</label>${inp('solar_addendum', s._id, 'vendor', s.vendor)}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>案場進度</label>${sel('solar_addendum', s._id, 'site_progress', s.site_progress, SOLAR_PROGRESS_OPTIONS)}</div>
+      <div><label>目前階段</label>${sel('solar_addendum', s._id, 'current_stage', s.current_stage, SOLAR_STAGE_OPTIONS)}</div>
+      <div><label>裝置容量(MW)</label>${inp('solar_addendum', s._id, 'capacity_mw', s.capacity_mw, 'number')}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>案場數量</label>${inp('solar_addendum', s._id, 'site_count', s.site_count, 'number')}</div>
+      <div><label>簽約日期</label>${inp('solar_addendum', s._id, 'sign_date', s.sign_date)}</div>
+      <div><label>設置期限</label>${inp('solar_addendum', s._id, 'install_deadline', s.install_deadline)}</div>
+    </div>
+    <div class="main-field" style="margin-top:8px">
+      <label>📝 目前辦理情況(主要更新欄位)</label>
+      ${ta('solar_addendum', s._id, 'current_operation', s.current_operation, 5)}
+    </div>
+    <div class="grid grid-1" style="margin-top:8px">
+      <div><label>困難點說明</label>${ta('solar_addendum', s._id, 'difficulty', s.difficulty, 2)}</div>
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>專案團隊處理建議</label>${ta('solar_addendum', s._id, 'team_suggestion', s.team_suggestion, 2)}</div>
+      <div><label>備註</label>${ta('solar_addendum', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 招標案
+function renderTenderFields(s) {
+  // 11 個審查欄位
+  const reviewBlocks = REVIEW_FIELDS.map(rf => `
+    <div class="review-field">
+      <label>${rf.label}</label>
+      <textarea rows="2" data-card="${s._id}" data-field="${rf.key}" 
+        oninput="updateField('hydro_tender','${s._id}','${rf.key}',this.value)">${htmlEscape(s[rf.key]||'')}</textarea>
+      <div class="quick-buttons">
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','○')">○ 已通過</button>
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','X')">X 未辦</button>
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','Δ')">Δ 進行中</button>
+        <button type="button" onclick="insertSymbol('hydro_tender','${s._id}','${rf.key}','-')">- 不適用</button>
+      </div>
+    </div>
+  `).join('');
+  
+  return `
+    <div class="grid grid-1"><div>
+      <label>案名<span class="req">*</span></label>${inp('hydro_tender', s._id, 'case_name', s.case_name)}
+    </div></div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>契約名稱</label>${inp('hydro_tender', s._id, 'contract_name', s.contract_name)}</div>
+      <div><label>廠商</label>${inp('hydro_tender', s._id, 'vendor', s.vendor)}</div>
+    </div>
+    
+    <div class="subsection-title">地點資訊</div>
+    <div class="grid grid-2">
+      <div><label>縣市</label>${inp('hydro_tender', s._id, 'county', s.county)}</div>
+      <div><label>鄉鎮市區</label>${inp('hydro_tender', s._id, 'township', s.township)}</div>
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>地段</label>${inp('hydro_tender', s._id, 'land_section', s.land_section)}</div>
+      <div><label>地號</label>${inp('hydro_tender', s._id, 'land_no', s.land_no)}</div>
+    </div>
+    
+    <div class="subsection-title">設備規格</div>
+    <div class="grid grid-3">
+      <div><label>裝置容量(kW)</label>${inp('hydro_tender', s._id, 'capacity_kw', s.capacity_kw, 'number')}</div>
+      <div><label>機組總數量(組)</label>${inp('hydro_tender', s._id, 'unit_count', s.unit_count, 'number')}</div>
+      <div><label>每組機組裝置容量(kW)</label>${inp('hydro_tender', s._id, 'unit_capacity_kw', s.unit_capacity_kw, 'number')}</div>
+    </div>
+    
+    <div class="subsection-title">時程</div>
+    <div class="grid grid-3">
+      <div><label>招商期間</label>${ta('hydro_tender', s._id, 'tender_period', s.tender_period, 2)}</div>
+      <div><label>簽約日期</label>${inp('hydro_tender', s._id, 'sign_date', s.sign_date)}</div>
+      <div><label>預計完工日期</label>${inp('hydro_tender', s._id, 'estimated_completion', s.estimated_completion)}</div>
+    </div>
+    
+    <div class="subsection-title">11 項審查進度(點按鈕快速插入 ○ / X / Δ / - 或自由輸入)</div>
+    <div class="grid grid-2" style="gap:14px">
+      ${reviewBlocks}
+    </div>
+    
+    <div class="main-field" style="margin-top:14px">
+      <label>📝 辦理情形(主要更新欄位)</label>
+      ${ta('hydro_tender', s._id, 'operation', s.operation, 5)}
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>遭遇困難事項</label>${ta('hydro_tender', s._id, 'difficulty', s.difficulty, 2)}</div>
+      <div><label>近期預計規劃辦理事項</label>${ta('hydro_tender', s._id, 'planned_next', s.planned_next, 2)}</div>
+    </div>
+    <div class="grid grid-1" style="margin-top:8px">
+      <div><label>備註</label>${ta('hydro_tender', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 測試案
+function renderTestFields(s) {
+  return `
+    <div class="grid grid-1"><div>
+      <label>圳路名稱<span class="req">*</span></label>${inp('hydro_test', s._id, 'channel_name', s.channel_name)}
+    </div></div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>廠商</label>${inp('hydro_test', s._id, 'vendor', s.vendor)}</div>
+      <div><label>樁號</label>${inp('hydro_test', s._id, 'pile_no', s.pile_no)}</div>
+    </div>
+    
+    <div class="subsection-title">地點</div>
+    <div class="grid grid-4">
+      <div><label>縣市</label>${inp('hydro_test', s._id, 'county', s.county)}</div>
+      <div><label>鄉鎮市區</label>${inp('hydro_test', s._id, 'township', s.township)}</div>
+      <div><label>地段</label>${inp('hydro_test', s._id, 'land_section', s.land_section)}</div>
+      <div><label>地號</label>${inp('hydro_test', s._id, 'land_no', s.land_no)}</div>
+    </div>
+    
+    <div class="subsection-title">設備</div>
+    <div class="grid grid-3">
+      <div><label>裝置容量(kW)</label>${inp('hydro_test', s._id, 'capacity_kw', s.capacity_kw, 'number')}</div>
+      <div><label>機組總數量(組)</label>${inp('hydro_test', s._id, 'unit_count', s.unit_count, 'number')}</div>
+      <div><label>每組機組裝置容量(kW)</label>${inp('hydro_test', s._id, 'unit_capacity_kw', s.unit_capacity_kw, 'number')}</div>
+    </div>
+    
+    <div class="subsection-title">時程</div>
+    <div class="grid grid-4">
+      <div><label>申請測試日期-起</label>${inp('hydro_test', s._id, 'test_apply_from', s.test_apply_from)}</div>
+      <div><label>申請測試日期-迄</label>${inp('hydro_test', s._id, 'test_apply_to', s.test_apply_to)}</div>
+      <div><label>簽約日期</label>${inp('hydro_test', s._id, 'sign_date', s.sign_date)}</div>
+      <div><label>實際完成測試日期</label>${inp('hydro_test', s._id, 'actual_test_date', s.actual_test_date)}</div>
+    </div>
+    
+    <div class="review-field" style="margin-top:8px">
+      <label>管理處內部審查(測試計畫)</label>
+      <textarea rows="2" data-card="${s._id}" data-field="internal_review" 
+        oninput="updateField('hydro_test','${s._id}','internal_review',this.value)">${htmlEscape(s.internal_review||'')}</textarea>
+      <div class="quick-buttons">
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','○')">○ 已通過</button>
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','X')">X 未辦</button>
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','Δ')">Δ 進行中</button>
+        <button type="button" onclick="insertSymbol('hydro_test','${s._id}','internal_review','-')">- 不適用</button>
+      </div>
+    </div>
+    
+    <div class="main-field" style="margin-top:8px">
+      <label>📝 辦理情形(主要更新欄位)</label>
+      ${ta('hydro_test', s._id, 'operation', s.operation, 5)}
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>近期預計規劃辦理事項</label>${ta('hydro_test', s._id, 'planned_next', s.planned_next, 2)}</div>
+      <div><label>備註</label>${ta('hydro_test', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 潛力案場
+function renderPotentialFields(s) {
+  return `
+    <div class="grid grid-1"><div>
+      <label>圳路名稱<span class="req">*</span></label>${inp('hydro_potential', s._id, 'channel_name', s.channel_name)}
+    </div></div>
+    <div class="grid grid-4" style="margin-top:8px">
+      <div><label>縣市</label>${inp('hydro_potential', s._id, 'county', s.county)}</div>
+      <div><label>鄉鎮市區</label>${inp('hydro_potential', s._id, 'township', s.township)}</div>
+      <div><label>地段</label>${inp('hydro_potential', s._id, 'land_section', s.land_section)}</div>
+      <div><label>地號</label>${inp('hydro_potential', s._id, 'land_no', s.land_no)}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>樁號</label>${inp('hydro_potential', s._id, 'pile_no', s.pile_no)}</div>
+      <div><label>預估設置容量(kW)</label>${inp('hydro_potential', s._id, 'estimated_capacity_kw', s.estimated_capacity_kw, 'number')}</div>
+      <div><label>版本類型</label>${sel('hydro_potential', s._id, 'version_type', s.version_type, ['對內,尚需評估','對外'])}</div>
+    </div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div><label>進度</label>${inp('hydro_potential', s._id, 'progress', s.progress)}</div>
+      <div><label>備註</label>${ta('hydro_potential', s._id, 'note', s.note, 2)}</div>
+    </div>
+  `;
+}
+
+// 洽詢紀錄
+function renderInquiryFields(s) {
+  return `
+    <div class="grid grid-3"><div>
+      <label>洽詢日期<span class="req">*</span></label>${inp('hydro_inquiry', s._id, 'inquiry_date', s.inquiry_date)}
+    </div>
+    <div><label>結案日期</label>${inp('hydro_inquiry', s._id, 'closure_date', s.closure_date)}</div>
+    <div><label>類型</label>${sel('hydro_inquiry', s._id, 'inquiry_type', s.inquiry_type, INQUIRY_TYPES)}</div>
+    </div>
+    <div class="grid grid-3" style="margin-top:8px">
+      <div><label>洽詢單位</label>${inp('hydro_inquiry', s._id, 'inquiry_unit', s.inquiry_unit)}</div>
+      <div><label>姓名</label>${inp('hydro_inquiry', s._id, 'name', s.name)}</div>
+      <div><label>洽詢方式</label>${sel('hydro_inquiry', s._id, 'inquiry_method', s.inquiry_method, INQUIRY_METHODS)}</div>
+    </div>
+    <div class="main-field" style="margin-top:8px">
+      <label>📝 洽詢內容(簡要說明)</label>
+      ${ta('hydro_inquiry', s._id, 'inquiry_content', s.inquiry_content, 3)}
+    </div>
+    <div class="grid grid-1" style="margin-top:8px">
+      <div><label>處理情形</label>${ta('hydro_inquiry', s._id, 'handling_status', s.handling_status, 3)}</div>
+    </div>
+  `;
+}
+
+// 確認框
+function onConfirmChange() {
+  document.getElementById('submit-btn').disabled = !document.getElementById('confirm-check').checked;
+}
+
+// 監聽填報人 input
+document.addEventListener('input', e => {
+  if (e.target.id === 'filler-name') state.fillerName = e.target.value;
+  if (e.target.id === 'filler-phone') state.fillerPhone = e.target.value;
+});
+
+// 下載 Excel
+function downloadExcel() {
+  if (!state.mgmt) { alert('請先選擇管理處'); return; }
+  if (!state.fillerName.trim()) { alert('請填寫填報人姓名'); return; }
+  
+  const now = new Date();
+  const tsStr = now.getFullYear() + '/' + 
+    String(now.getMonth()+1).padStart(2,'0') + '/' + 
+    String(now.getDate()).padStart(2,'0') + ' ' +
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0');
+  
+  const wb = XLSX.utils.book_new();
+  
+  // === Sheet 0: Metadata ===
+  const metaRows = [
+    ['月報填報 - Metadata(本表為系統匯入用,請勿手動編輯)'],
+    [],
+    ['欄位', '內容'],
+    ['期別', METADATA.period],
+    ['管理處', state.mgmt],
+    ['填報人姓名', state.fillerName],
+    ['聯絡電話', state.fillerPhone],
+    ['填報時間', tsStr],
+    ['快照日期', METADATA.snapshot_date],
+    ['快照來源', METADATA.snapshot_source],
+    [],
+    ['資料統計', ''],
+    ['太陽光電(附件一)', state.data.solar_addendum.filter(s=>!s._deleted).length],
+    ['  其中新增', state.data.solar_addendum.filter(s=>s._new&&!s._deleted).length],
+    ['  其中標記刪除', state.data.solar_addendum.filter(s=>s._deleted).length],
+    ['小水力-招標案', state.data.hydro_tender.filter(s=>!s._deleted).length],
+    ['  其中新增', state.data.hydro_tender.filter(s=>s._new&&!s._deleted).length],
+    ['  其中標記刪除', state.data.hydro_tender.filter(s=>s._deleted).length],
+    ['小水力-測試案', state.data.hydro_test.filter(s=>!s._deleted).length],
+    ['小水力-潛力案場', state.data.hydro_potential.filter(s=>!s._deleted).length],
+    ['小水力-洽詢紀錄', state.data.hydro_inquiry.filter(s=>!s._deleted).length]
+  ];
+  const ws0 = XLSX.utils.aoa_to_sheet(metaRows);
+  ws0['!cols'] = [{ wch: 28 }, { wch: 60 }];
+  XLSX.utils.book_append_sheet(wb, ws0, 'Metadata');
+  
+  // === Sheet 1: 太陽光電(附件一)===
+  const stat = s => s._deleted ? '已刪除' : (s._new ? '新增' : (isModified(s) ? '修改' : '正常'));
+  
+  const solarHeader = ['狀態', '案場ID', '管理處', '契約名稱', '案場進度', '設置廠商', '案場名稱', 
+    '案場數量', '裝置容量(MW)', '目前階段', '簽約日期', '設置期限', '到期狀態',
+    '目前辦理情況', '困難點說明', '專案團隊處理建議', '備註'];
+  const solarRows = [solarHeader].concat(state.data.solar_addendum.map(s => [
+    stat(s), s._id, s.mgmt||'', s.contract_name||'', s.site_progress||'', s.vendor||'', s.site_name||'',
+    s.site_count==null?'':s.site_count, s.capacity_mw==null?'':s.capacity_mw,
+    s.current_stage||'', s.sign_date||'', s.install_deadline||'', s.expire_status||'',
+    s.current_operation||'', s.difficulty||'', s.team_suggestion||'', s.note||''
+  ]));
+  const ws1 = XLSX.utils.aoa_to_sheet(solarRows);
+  ws1['!cols'] = [{wch:8},{wch:22},{wch:8},{wch:30},{wch:14},{wch:22},{wch:30},{wch:8},{wch:10},
+    {wch:16},{wch:12},{wch:18},{wch:10},{wch:60},{wch:30},{wch:30},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws1, '太陽光電');
+  
+  // === Sheet 2: 招標案 ===
+  const tenderHeader = ['狀態','案場ID','管理處','縣市','鄉鎮市區','地段','地號','契約名稱','案名',
+    '裝置容量(kW)','機組總數量','每組機組裝置容量(kW)','招商期間','簽約日期',
+    '饋線保留','管理處內部審查','台電併聯審查','水權申請','水利建造物申請','水保計畫申請',
+    '土地容許','電業籌設','同意備案','說明會','施工許可',
+    '預計完工日期','廠商','辦理情形','遭遇困難事項','近期預計規劃辦理事項','備註'];
+  const tenderRows = [tenderHeader].concat(state.data.hydro_tender.map(s => [
+    stat(s), s._id, s.mgmt||'', s.county||'', s.township||'', s.land_section||'', s.land_no||'',
+    s.contract_name||'', s.case_name||'',
+    s.capacity_kw==null?'':s.capacity_kw, s.unit_count==null?'':s.unit_count, s.unit_capacity_kw==null?'':s.unit_capacity_kw,
+    s.tender_period||'', s.sign_date||'',
+    s.feeder||'', s.internal_review||'', s.taipower_review||'', s.water_right||'', s.water_structure||'',
+    s.soil_conservation||'', s.land_permit||'', s.electric_setup||'', s.consent_filed||'', s.briefing||'', s.construction_permit||'',
+    s.estimated_completion||'', s.vendor||'', s.operation||'', s.difficulty||'', s.planned_next||'', s.note||''
+  ]));
+  const ws2 = XLSX.utils.aoa_to_sheet(tenderRows);
+  ws2['!cols'] = Array(tenderHeader.length).fill({wch:14});
+  ws2['!cols'][27] = {wch:60}; // 辦理情形
+  XLSX.utils.book_append_sheet(wb, ws2, '招標案');
+  
+  // === Sheet 3: 測試案 ===
+  const testHeader = ['狀態','案場ID','管理處','縣市','鄉鎮市區','地段','地號','圳路名稱',
+    '裝置容量(kW)','樁號','機組總數量','每組機組裝置容量(kW)',
+    '申請測試日期-起','申請測試日期-迄','簽約日期','管理處內部審查','實際完成測試日期',
+    '廠商','辦理情形','近期預計規劃辦理事項','備註'];
+  const testRows = [testHeader].concat(state.data.hydro_test.map(s => [
+    stat(s), s._id, s.mgmt||'', s.county||'', s.township||'', s.land_section||'', s.land_no||'',
+    s.channel_name||'',
+    s.capacity_kw==null?'':s.capacity_kw, s.pile_no||'', s.unit_count==null?'':s.unit_count, s.unit_capacity_kw==null?'':s.unit_capacity_kw,
+    s.test_apply_from||'', s.test_apply_to||'', s.sign_date||'', s.internal_review||'', s.actual_test_date||'',
+    s.vendor||'', s.operation||'', s.planned_next||'', s.note||''
+  ]));
+  const ws3 = XLSX.utils.aoa_to_sheet(testRows);
+  ws3['!cols'] = Array(testHeader.length).fill({wch:14});
+  ws3['!cols'][18] = {wch:60};
+  XLSX.utils.book_append_sheet(wb, ws3, '測試案');
+  
+  // === Sheet 4: 潛力案場 ===
+  const potHeader = ['狀態','案場ID','管理處','縣市','鄉鎮市區','地段','地號',
+    '圳路名稱','樁號','預估設置容量(kW)','備註','進度','版本類型'];
+  const potRows = [potHeader].concat(state.data.hydro_potential.map(s => [
+    stat(s), s._id, s.mgmt||'', s.county||'', s.township||'', s.land_section||'', s.land_no||'',
+    s.channel_name||'', s.pile_no||'', s.estimated_capacity_kw==null?'':s.estimated_capacity_kw,
+    s.note||'', s.progress||'', s.version_type||''
+  ]));
+  const ws4 = XLSX.utils.aoa_to_sheet(potRows);
+  ws4['!cols'] = Array(potHeader.length).fill({wch:14});
+  ws4['!cols'][10] = {wch:40};
+  XLSX.utils.book_append_sheet(wb, ws4, '潛力案場');
+  
+  // === Sheet 5: 洽詢紀錄 ===
+  const inqHeader = ['狀態','案場ID','管理處','洽詢日期','洽詢單位','姓名','洽詢方式',
+    '類型','洽詢內容','處理情形','結案日期'];
+  const inqRows = [inqHeader].concat(state.data.hydro_inquiry.map(s => [
+    stat(s), s._id, s.mgmt||'', s.inquiry_date||'', s.inquiry_unit||'', s.name||'', s.inquiry_method||'',
+    s.inquiry_type||'', s.inquiry_content||'', s.handling_status||'', s.closure_date||''
+  ]));
+  const ws5 = XLSX.utils.aoa_to_sheet(inqRows);
+  ws5['!cols'] = Array(inqHeader.length).fill({wch:14});
+  ws5['!cols'][8] = {wch:50};
+  ws5['!cols'][9] = {wch:50};
+  XLSX.utils.book_append_sheet(wb, ws5, '洽詢紀錄');
+  
+  // 檔名
+  const safeFiller = state.fillerName.replace(/[\\\/:*?"<>|]/g, '_').substring(0, 20);
+  const filename = METADATA.period + '_' + state.mgmt + '_' + safeFiller + '_' + 
+    now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + 
+    String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0') + '.xlsx';
+  
+  XLSX.writeFile(wb, filename);
+  
+  alert('✅ 已下載 ' + filename + '\n\n' +
+    '太陽光電 ' + state.data.solar_addendum.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-招標案 ' + state.data.hydro_tender.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-測試案 ' + state.data.hydro_test.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-潛力案場 ' + state.data.hydro_potential.filter(s=>!s._deleted).length + ' 案\n' +
+    '小水力-洽詢紀錄 ' + state.data.hydro_inquiry.filter(s=>!s._deleted).length + ' 案\n\n' +
+    '請依現有作業流程,上傳至指定雲端資料夾。');
+}
+
+// 初始化
+document.getElementById('mgmt-select').focus();
+</script>
+
+</body>
+</html>
